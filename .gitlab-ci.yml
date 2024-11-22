@@ -34,6 +34,7 @@ deploy:
   before_script:
     - docker info
   script:
+    - mkdir -p /opt/muskmonitor
     - cp sys-src/docker-compose.yml /opt/muskmonitor
     - cd /opt/muskmonitor
     # Start or restart the Docker Compose application
