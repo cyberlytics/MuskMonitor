@@ -29,10 +29,16 @@ deploy:
   services:
     - docker:27.0-dind
   script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+    - eval $(ssh-agent -s)
+
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+
     - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H 130.61.36.199 >> ~/.ssh/known_hosts
+    - chmod 700 ~/.ssh
+
+    - ssh-keyscan 130.61.36.199 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
     
     - mkdir -p /opt/muskmonitor
     - cp -r sys-src /opt/muskmonitor
