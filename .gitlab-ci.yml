@@ -8,9 +8,12 @@ variables:
 
 build:
   stage: build
+  image: docker:latest
   services:
     - docker:19-dind
-  image: docker:latest
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     - docker info
   script:
