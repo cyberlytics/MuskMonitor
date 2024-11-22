@@ -27,17 +27,20 @@ deploy:
   stage: deploy
   image: docker:latest
   services:
-    - docker:27-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - docker info
+    - docker:27.0-dind
   script:
     - mkdir -p /opt/muskmonitor
     - cp -r sys-src /opt/muskmonitor
     - cd /opt/muskmonitor/sys-src
-    - docker-compose down
-    - docker-compose up -d --build
+
+    # Set the SSH private key
+    - echo "$SSH_PRIVATE_KEY" > private_key.pem
+    - chmod 600 private_key.pem  # Secure the SSH private key file
+
+    # Copy the files to the server using scp
+    - 'scp -i private_key.pem -o StrictHostKeyChecking=no -r /opt/muskmonitor user@your-server-ip:/opt/muskmonitor'
+
+    # SSH into the server and run docker-compose
+    - 'ssh -o StrictHostKeyChecking=no -i private_key.pem user@your-server-ip "cd /opt/muskmonitor/sys-src && docker compose down && docker compose up -d --build"'
   only:
     - main
