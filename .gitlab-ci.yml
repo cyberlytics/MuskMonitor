@@ -18,8 +18,8 @@ build:
     - docker info
   script:
     # Build the Docker images locally
-    - docker build -t react-frontend:latest -f ./muskmonitor-frontend/Dockerfile ./muskmonitor-frontend
-    - docker build -t nginx:latest -f ./nginx/Dockerfile ./nginx
+    - docker build -t react-frontend:latest -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
+    - docker build -t nginx:latest -f sys-src/nginx/Dockerfile sys-src/nginx
   only:
     - main
 
