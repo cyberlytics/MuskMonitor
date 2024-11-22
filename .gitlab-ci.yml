@@ -28,12 +28,12 @@ deploy:
   image: docker:latest
   services:
     - docker:27.0-dind
-  before script:
+  script:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 130.61.36.199 >> ~/.ssh/known_hosts
-  script:
+    
     - mkdir -p /opt/muskmonitor
     - cp -r sys-src /opt/muskmonitor
 
