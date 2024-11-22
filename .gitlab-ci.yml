@@ -38,9 +38,9 @@ deploy:
     - chmod 600 private_key.pem  # Secure the SSH private key file
 
     # Copy the files to the server using scp
-    - 'scp -i private_key.pem -o StrictHostKeyChecking=no -r /opt/muskmonitor user@your-server-ip:/opt/muskmonitor'
+    - 'scp -i private_key.pem -o StrictHostKeyChecking=no -r /opt/muskmonitor ubuntu@130.61.36.199:/opt/muskmonitor'
 
     # SSH into the server and run docker-compose
-    - 'ssh -o StrictHostKeyChecking=no -i private_key.pem user@your-server-ip "cd /opt/muskmonitor/sys-src && docker compose down && docker compose up -d --build"'
+    - 'ssh -o StrictHostKeyChecking=no -i private_key.pem user@130.61.36.199 "cd /opt/muskmonitor/sys-src && docker compose down && docker compose up -d --build"'
   only:
     - main
