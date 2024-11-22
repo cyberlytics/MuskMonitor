@@ -9,7 +9,7 @@ variables:
 build:
   stage: build
   services:
-    - docker:dind
+    - docker:19-dind
   image: docker:latest
   before_script:
     - docker info
