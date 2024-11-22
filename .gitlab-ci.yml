@@ -35,9 +35,8 @@ deploy:
     - docker info
   script:
     - mkdir -p /opt/muskmonitor
-    - cp sys-src/docker-compose.yml /opt/muskmonitor
-    - cd /opt/muskmonitor
-    # Start or restart the Docker Compose application
+    - cp -r sys-src /opt/muskmonitor
+    - cd /opt/muskmonitor/sys-src
     - docker-compose down
     - docker-compose up -d --build
   only:
