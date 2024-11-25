@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 function ShowStock() {
@@ -11,19 +10,16 @@ function ShowStock() {
   const [showSecondGraph, setShowSecondGraph] = useState(false);
 
   useEffect(() => {
-    const API_KEY = 'BJ22JP64AWPTKJN2';
-    const symbol = 'TSLA';
-
-    axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${API_KEY}`)
-      .then(response => {
-        const timeSeries = response.data['Time Series (Daily)'];
-        const formattedData = Object.keys(timeSeries).map(date => ({
-          Datum: date,
-          Schluss: parseFloat(timeSeries[date]['4. close']),
-          Volumen: parseInt(timeSeries[date]['5. volume']),
-          Eröffnungskurs: parseFloat(timeSeries[date]['1. open']),
-          Hoch: parseFloat(timeSeries[date]['2. high']),
-          Tief: parseFloat(timeSeries[date]['3. low'])
+    fetch('/historical_data.json')
+      .then(response => response.json())
+      .then(data => {
+        const formattedData = data.map(item => ({
+          Datum: item.Datum,
+          Schluss: parseFloat(item["Schluss/Letzter"].replace('$', '')),
+          Volumen: item.Volumen,
+          Eröffnungskurs: parseFloat(item["Eröffnungskurs"].replace('$', '')),
+          Hoch: parseFloat(item.Hoch.replace('$', '')),
+          Tief: parseFloat(item.Tief.replace('$', ''))
         }));
         setData(formattedData.reverse());
       });
