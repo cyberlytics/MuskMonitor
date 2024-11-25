@@ -1,7 +1,13 @@
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+//import ShowStock from '../components/ShowStock.jsx';
+import ShowStock from '../components/ShowStock_historical.jsx';
 
-function show_stock() {
-  let navigate = useNavigate();
-
-  navigate("/show_tweets");
+function ShowStockPage() {
+  return (
+    <div>
+      <ShowStock />
+    </div>
+  );
 }
+
+export default ShowStockPage;
