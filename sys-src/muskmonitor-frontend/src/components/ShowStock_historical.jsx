@@ -11,11 +11,9 @@ function ShowStock() {
   const [showSecondGraph, setShowSecondGraph] = useState(false);
 
   useEffect(() => {
-    // Ersetze 'YOUR_API_KEY' durch deinen Alpha Vantage API-Schlüssel
     const API_KEY = 'BJ22JP64AWPTKJN2';
     const symbol = 'TSLA';
 
-    // Abrufen der historischen Daten
     axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${API_KEY}`)
       .then(response => {
         const timeSeries = response.data['Time Series (Daily)'];
@@ -27,10 +25,9 @@ function ShowStock() {
           Hoch: parseFloat(timeSeries[date]['2. high']),
           Tief: parseFloat(timeSeries[date]['3. low'])
         }));
-        setData(formattedData.reverse()); // Daten umkehren
+        setData(formattedData.reverse());
       });
 
-    // Abrufen der Tweets
     fetch('/tweets.json')
       .then(response => response.json())
       .then(data => {
@@ -66,7 +63,6 @@ function ShowStock() {
     [selectedDataKey]: item[selectedDataKey] - 5
   }));
 
-  // Erweiterung der Datenreihe bis zum Enddatum
   const extendedData = [...filteredData];
   if (endDate) {
     const lastDate = new Date(filteredData[filteredData.length - 1]?.Datum);
