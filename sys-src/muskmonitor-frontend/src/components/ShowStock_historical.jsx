@@ -5,14 +5,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'r
 function ShowStock() {
   const [data, setData] = useState([]);
   const [tweets, setTweets] = useState([]);
-  const [selectedDataKey, setSelectedDataKey] = useState('close');
+  const [selectedDataKey, setSelectedDataKey] = useState('Schluss');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showSecondGraph, setShowSecondGraph] = useState(false);
 
   useEffect(() => {
     // Ersetze 'YOUR_API_KEY' durch deinen Alpha Vantage API-Schlüssel
-    const API_KEY = 'YOUR_API_KEY';
+    const API_KEY = 'BJ22JP64AWPTKJN2';
     const symbol = 'TSLA';
 
     // Abrufen der historischen Daten
@@ -21,11 +21,11 @@ function ShowStock() {
         const timeSeries = response.data['Time Series (Daily)'];
         const formattedData = Object.keys(timeSeries).map(date => ({
           Datum: date,
-          open: parseFloat(timeSeries[date]['1. open']),
-          high: parseFloat(timeSeries[date]['2. high']),
-          low: parseFloat(timeSeries[date]['3. low']),
-          close: parseFloat(timeSeries[date]['4. close']),
-          volume: parseInt(timeSeries[date]['5. volume'])
+          Schluss: parseFloat(timeSeries[date]['4. close']),
+          Volumen: parseInt(timeSeries[date]['5. volume']),
+          Eröffnungskurs: parseFloat(timeSeries[date]['1. open']),
+          Hoch: parseFloat(timeSeries[date]['2. high']),
+          Tief: parseFloat(timeSeries[date]['3. low'])
         }));
         setData(formattedData.reverse()); // Daten umkehren
       });
@@ -76,11 +76,11 @@ function ShowStock() {
         lastDate.setDate(lastDate.getDate() + 1);
         extendedData.push({
           Datum: lastDate.toISOString().split('T')[0],
-          open: null,
-          high: null,
-          low: null,
-          close: null,
-          volume: null
+          Schluss: null,
+          Volumen: null,
+          Eröffnungskurs: null,
+          Hoch: null,
+          Tief: null
         });
       }
     }
@@ -121,11 +121,10 @@ function ShowStock() {
       <h1>Stock Data Visualization</h1>
       <label htmlFor="dataKey">Select Data Key: </label>
       <select id="dataKey" value={selectedDataKey} onChange={handleChange}>
-        <option value="open">Open</option>
-        <option value="high">High</option>
-        <option value="low">Low</option>
-        <option value="close">Close</option>
-        <option value="volume">Volume</option>
+        <option value="Schluss">Schluss</option>
+        <option value="Eröffnungskurs">Eröffnungskurs</option>
+        <option value="Hoch">Hoch</option>
+        <option value="Tief">Tief</option>
       </select>
       <br />
       <label htmlFor="startDate">Start Date: </label>
