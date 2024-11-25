@@ -1,5 +1,5 @@
 # flask python package 
-from flask import Flask, render_template
+from flask import Flask
 from flask_weaviate import FlaskWeaviate
 import logging
 
@@ -13,19 +13,20 @@ formatter = logging.Formatter('%(asctime)s - %(name)s %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-app = Flask(__name__)
+app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
 app.config["WEAVIATE_URL"] = "http://database:8080"
 weaviate = FlaskWeaviate(app)
 
-@app.route("/")
-def index():
+@app.route('/')
+def home():
     c = weaviate.client
     c.connect()
     logger.info(c.is_connected())
     logger.info(c.get_meta())
     c.close()
-    return "Hello World"
+    return 'Hello, World!'
 
-if __name__ == "__main__":
-    logger.info(__name__)
-    app.run(host="0.0.0.0")
+
+if __name__ == '__main__':
+    # Starte die Flask-Anwendung im Debug-Modus
+    app.run(debug=True)
