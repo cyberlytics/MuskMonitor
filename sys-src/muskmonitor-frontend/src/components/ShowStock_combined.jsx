@@ -11,30 +11,29 @@ function ShowStock() {
   const [showSecondGraph, setShowSecondGraph] = useState(false);
 
   useEffect(() => {
-    const API_KEY = 'BJ22JP64AWPTKJN2';
-    const symbol = 'TSLA';
-    
-    axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${API_KEY}`)
-      .then(response => {
-        const timeSeries = response.data['Time Series (Daily)'];
-        const formattedData = Object.keys(timeSeries).map(date => ({
-          Datum: date,
-          open: parseFloat(timeSeries[date]['1. open']),
-          high: parseFloat(timeSeries[date]['2. high']),
-          low: parseFloat(timeSeries[date]['3. low']),
-          close: parseFloat(timeSeries[date]['4. close']),
-          volume: parseInt(timeSeries[date]['5. volume'])
-        }));
-        setData(formattedData.reverse());
+    // Lade die Daten aus konvertierte_datei.json
+    fetch('/konvertierte_datei.json')
+      .then(response => response.json())
+      .then(konvertierteDaten => {
+        // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
+        konvertierteDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
 
-        // Daten in tsla.json speichern
-        const blob = new Blob([JSON.stringify(formattedData, null, 4)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'tsla.json';
-        a.click();
-        URL.revokeObjectURL(url);
+        // Lade die Daten aus tsla.json
+        fetch('/tsla.json')
+          .then(response => response.json())
+          .then(tslaDaten => {
+            // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
+            tslaDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
+
+            // Finde das letzte Datum in konvertierte_datei.json
+            const lastDate = new Date(konvertierteDaten[konvertierteDaten.length - 1].Datum);
+
+            // Füge die neuen Daten aus tsla.json hinzu
+            const newData = tslaDaten.filter(item => new Date(item.Datum) > lastDate);
+            const combinedData = [...konvertierteDaten, ...newData];
+
+            setData(combinedData);
+          });
       });
 
     fetch('/tweets.json')
