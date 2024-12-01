@@ -42,7 +42,7 @@ test:
     - docker run --rm --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
 
     # Run React frontend tests
-    - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
+    - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile --target build sys-src/muskmonitor-frontend
     - docker run --rm --name react-tests react-tests npm run test
 
     # Cleanup
