@@ -1,5 +1,14 @@
 services:
-  database:
+  stock-database:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root_password
+    volumes:
+    - "MongoDB_Data:/data/db"
+
+  vector-database:
     image: cr.weaviate.io/semitechnologies/weaviate
     command: "--host 0.0.0.0 --port '8080' --scheme http"
     ports:
@@ -21,7 +30,8 @@ services:
     ports:
      - "5000:5000"
     depends_on:
-     - database
+     - stock-database
+     - vector-database
 
   react-frontend:
     build: ./muskmonitor-frontend
@@ -40,3 +50,4 @@ services:
 
 volumes:
   Weaviate_Data:
+  MongoDB_Data:
