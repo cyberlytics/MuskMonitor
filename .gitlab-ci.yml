@@ -43,7 +43,7 @@ test:
 
     # Run React frontend tests
     - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile --target build sys-src/muskmonitor-frontend
-    - docker run --rm --name react-tests react-tests npm run test
+    - docker run --rm --name react-tests react-tests npm run test -- --run
 
     # Cleanup
     - docker stop test-database

@@ -48,7 +48,7 @@ services:
     build:
       context: ./muskmonitor-frontend
       target: build
-    command: npm run test
+    command: npm run test -- --run
 
 volumes:
   Weaviate_Data:
