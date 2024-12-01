@@ -1,2 +1,4 @@
 flask
 flask_weaviate
+pytest
+pytest-flask

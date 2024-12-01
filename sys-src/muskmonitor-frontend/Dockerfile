@@ -6,6 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+RUN npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom
 RUN npm run build
 
 FROM nginx:alpine

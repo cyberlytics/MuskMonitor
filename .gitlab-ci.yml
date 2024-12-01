@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - deploy
 
 variables:
@@ -19,7 +20,34 @@ build:
   script:
     # Build the Docker images locally
     - docker build -t react-frontend:latest -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
+    - docker build -t flask-backend:latest -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
     - docker build -t nginx:latest -f sys-src/nginx/Dockerfile sys-src/nginx
+  only:
+    - main
+
+test:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    # Run database service
+    - docker run -d --name test-database cr.weaviate.io/semitechnologies/weaviate
+
+    # Run Flask backend tests
+    - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
+    - docker run --rm --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
+
+    # Run React frontend tests
+    - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
+    - docker run --rm --name react-tests react-tests npm run test
+
+    # Cleanup
+    - docker stop test-database
+    - docker rm test-database
   only:
     - main
 
