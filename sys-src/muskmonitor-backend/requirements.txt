@@ -1,5 +1,6 @@
 flask
 flask_weaviate
+pymongo
 pytest
 pytest-flask
 bs4

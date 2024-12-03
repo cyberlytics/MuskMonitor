@@ -28,6 +28,9 @@ describe('ShowStock Component', () => {
     fetch.mockResolvedValue({
       json: vi.fn().mockResolvedValue(mockTweets),
     });
+
+    global.URL.createObjectURL = vi.fn(() => 'mock-url');
+    global.URL.revokeObjectURL = vi.fn();
   });
 
   test('renders the component and displays stock data', async () => {
@@ -38,5 +41,9 @@ describe('ShowStock Component', () => {
 
     // Check if the stock data is displayed
     expect(screen.getByText('Stock Data Visualization')).toBeInTheDocument();
+  });
+
+  afterAll(() => {
+    delete global.URL.createObjectURL;
   });
 });
