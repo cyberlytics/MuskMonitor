@@ -1,7 +1,8 @@
 # flask python package 
-from flask import Flask
+from flask import Flask, request
 from flask_weaviate import FlaskWeaviate
 import logging
+import json
 
 logger = logging.getLogger('Backend')
 logger.setLevel(logging.DEBUG)
@@ -26,6 +27,10 @@ def home():
     c.close()
     return 'Hello, World!'
 
+@app.route("/get_stock_data", methods=["GET", "POST"])
+def test():
+    
+    return json.dumps()
 
 if __name__ == '__main__':
     # Starte die Flask-Anwendung im Debug-Modus

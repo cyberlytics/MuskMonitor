@@ -11,30 +11,38 @@ function ShowStock() {
   const [showSecondGraph, setShowSecondGraph] = useState(false);
 
   useEffect(() => {
-    // Lade die Daten aus konvertierte_datei.json
-    fetch('/konvertierte_datei.json')
-      .then(response => response.json())
-      .then(konvertierteDaten => {
-        // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
-        konvertierteDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
+    fetch("/get_stock_data", {   
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(stock_data => {
+          setData(stock_data);
+        });
+    // // Lade die Daten aus konvertierte_datei.json
+    // fetch('/konvertierte_datei.json')
+    //   .then(response => response.json())
+    //   .then(konvertierteDaten => {
+    //     // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
+    //     konvertierteDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
 
-        // Lade die Daten aus tsla.json
-        fetch('/tsla.json')
-          .then(response => response.json())
-          .then(tslaDaten => {
-            // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
-            tslaDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
+    //     // Lade die Daten aus tsla.json
+    //     fetch('/tsla.json')
+    //       .then(response => response.json())
+    //       .then(tslaDaten => {
+    //         // Sortiere die Daten in aufsteigender Reihenfolge nach Datum
+    //         tslaDaten.sort((a, b) => new Date(a.Datum) - new Date(b.Datum));
 
-            // Finde das letzte Datum in konvertierte_datei.json
-            const lastDate = new Date(konvertierteDaten[konvertierteDaten.length - 1].Datum);
+    //         // Finde das letzte Datum in konvertierte_datei.json
+    //         const lastDate = new Date(konvertierteDaten[konvertierteDaten.length - 1].Datum);
 
-            // Füge die neuen Daten aus tsla.json hinzu
-            const newData = tslaDaten.filter(item => new Date(item.Datum) > lastDate);
-            const combinedData = [...konvertierteDaten, ...newData];
+    //         // Füge die neuen Daten aus tsla.json hinzu
+    //         const newData = tslaDaten.filter(item => new Date(item.Datum) > lastDate);
+    //         const combinedData = [...konvertierteDaten, ...newData];
 
-            setData(combinedData);
-          });
-      });
+    //         setData(combinedData);
+    //       });
+    //   });
 
     fetch('/tweets.json')
       .then(response => response.json())
