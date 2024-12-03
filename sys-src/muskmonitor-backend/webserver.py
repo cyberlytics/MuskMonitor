@@ -1,11 +1,10 @@
 # flask python package 
 from flask import Flask, request
 from flask_weaviate import FlaskWeaviate
-# from flask_pymongo import PyMongo
+from flask_pymongo import PyMongo
 from pymongo import MongoClient
 import bson.json_util
 import logging
-import json
 
 logger = logging.getLogger('Backend')
 logger.setLevel(logging.DEBUG)
@@ -21,6 +20,10 @@ app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
 app.config["WEAVIATE_URL"] = "http://vector-database:8080"
 weaviate = FlaskWeaviate(app)
 
+# app.config["MONGO_URI"] = "mongodb://root:root_password@stock-database:27017/stock_data?authSource=admin"
+# mongo = PyMongo(app)
+# logger.info("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+# logger.info(mongo.cx.list_database_names())
 mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
@@ -32,7 +35,7 @@ def home():
     logger.info(c.is_connected())
     logger.info(c.get_meta())
     c.close()
-    logger.info(tesla_stock.count_documents({}))
+    # logger.info(tesla_stock.count_documents({}))
     return 'Hello, World!'
 
 @app.route("/get_stock_data", methods=["GET", "POST"])
@@ -40,6 +43,7 @@ def get_stock_data():
     # PyMongo queries return a cursor on the data.
     # An empty query '{}' returns all data in the collection.
     return bson.json_util.dumps(tesla_stock.find({}))
+    # return bson.json_util.dumps(mongo.db["tesla"].find({}))
 
 if __name__ == '__main__':
     # Starte die Flask-Anwendung im Debug-Modus
