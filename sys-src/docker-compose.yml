@@ -52,7 +52,8 @@ services:
     build: ./muskmonitor-backend
     command: pytest --maxfail=1 --disable-warnings
     depends_on:
-      - database
+      - stock-database
+      - vector-database
 
   react-tests:
     build:

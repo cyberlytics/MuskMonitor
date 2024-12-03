@@ -1,9 +1,11 @@
 # flask python package 
-from flask import Flask
+from flask import Flask, request
 from flask_weaviate import FlaskWeaviate
 # from flask_pymongo import PyMongo
 from pymongo import MongoClient
+import bson.json_util
 import logging
+import json
 
 logger = logging.getLogger('Backend')
 logger.setLevel(logging.DEBUG)
@@ -33,6 +35,11 @@ def home():
     logger.info(tesla_stock.count_documents({}))
     return 'Hello, World!'
 
+@app.route("/get_stock_data", methods=["GET", "POST"])
+def get_stock_data():
+    # PyMongo queries return a cursor on the data.
+    # An empty query '{}' returns all data in the collection.
+    return bson.json_util.dumps(tesla_stock.find({}))
 
 if __name__ == '__main__':
     # Starte die Flask-Anwendung im Debug-Modus

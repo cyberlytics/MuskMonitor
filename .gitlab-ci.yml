@@ -19,6 +19,7 @@ build:
     - docker info
   script:
     # Build the Docker images locally
+    - docker build -t mongo:latest -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root_password sys-src/stock-database
     - docker build -t react-frontend:latest -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
     - docker build -t flask-backend:latest -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
     - docker build -t nginx:latest -f sys-src/nginx/Dockerfile sys-src/nginx
