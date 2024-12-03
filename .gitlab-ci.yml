@@ -18,21 +18,10 @@ build:
   before_script:
     - docker info
   script:
-    # Build Docker images
+    # Build the Docker images locally
     - docker build -t react-frontend:latest -f sys-src/muskmonitor-frontend/Dockerfile sys-src/muskmonitor-frontend
     - docker build -t flask-backend:latest -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
     - docker build -t nginx:latest -f sys-src/nginx/Dockerfile sys-src/nginx
-
-    # Save Docker images as tar files
-    - docker save -o react-frontend.tar react-frontend:latest
-    - docker save -o flask-backend.tar flask-backend:latest
-    - docker save -o nginx.tar nginx:latest
-  artifacts:
-    paths:
-      - react-frontend.tar
-      - flask-backend.tar
-      - nginx.tar
-    expire_in: 1 day
   only:
     - main
 
@@ -44,21 +33,17 @@ test:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-  dependencies:
-    - build
   script:
-    # Load Docker images from artifacts
-    - docker load -i react-frontend.tar
-    - docker load -i flask-backend.tar
-
     # Run database service
     - docker run -d --name test-database cr.weaviate.io/semitechnologies/weaviate
 
     # Run Flask backend tests
-    - docker run --rm --name flask-tests flask-backend:latest pytest --maxfail=1 --disable-warnings
+    - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
+    - docker run --rm --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
 
     # Run React frontend tests
-    - docker run --rm --name react-tests react-frontend:latest npm run test -- --run
+    - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile --target build sys-src/muskmonitor-frontend
+    - docker run --rm --name react-tests react-tests npm run test -- --run
 
     # Cleanup
     - docker stop test-database
