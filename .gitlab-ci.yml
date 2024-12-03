@@ -35,7 +35,7 @@ test:
     DOCKER_TLS_CERTDIR: ""
   script:
     # Run database service
-    - docker run -d --name test-database cr.weaviate.io/semitechnologies/weaviate
+    - docker run -d --name vector-database cr.weaviate.io/semitechnologies/weaviate
     - docker run -d --name stock-database -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root_password mongo
     # Run Flask backend tests
     - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
@@ -46,8 +46,10 @@ test:
     - docker run --rm --name react-tests react-tests npm run test -- --run
 
     # Cleanup
-    - docker stop test-database
-    - docker rm test-database
+    - docker stop vector-database
+    - docker rm vector-database
+    - docker stop stock-database
+    - docker rm stock-database
   only:
     - main
 
