@@ -13,7 +13,7 @@ function ShowStock() {
   useEffect(() => {
     fetch("/get_stock_data", {   
           method: 'POST',
-          headers: {'Content-Type': 'application/json'}
+          headers: {'Content-Type': 'application/json'},
         })
         .then(response => response.json())
         .then(stock_data => {
