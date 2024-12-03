@@ -34,22 +34,27 @@ test:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   script:
+    # Add all containers in the testing phase to a Docker network so that they can communicate with
+    # each other through names (e.g. mongodb://stock-database). A Docker-Compose file automatically
+    # creates and adds all contained services to a temporary Docker network.
+    - docker network create temp_test_network
     # Run database service
-    - docker run -d --name vector-database cr.weaviate.io/semitechnologies/weaviate
-    - docker run -d --name stock-database -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root_password mongo
+    - docker run -d --net temp_test_network --name vector-database cr.weaviate.io/semitechnologies/weaviate
+    - docker run -d --net temp_test_network --name stock-database -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root_password mongo
     # Run Flask backend tests
     - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
-    - docker run --rm --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
+    - docker run --rm --net temp_test_network --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
 
     # Run React frontend tests
     - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile --target build sys-src/muskmonitor-frontend
-    - docker run --rm --name react-tests react-tests npm run test -- --run
+    - docker run --rm --net temp_test_network --name react-tests react-tests npm run test -- --run
 
     # Cleanup
     - docker stop vector-database
     - docker rm vector-database
     - docker stop stock-database
     - docker rm stock-database
+    - docker network rm temp_test_network
   only:
     - main
 
