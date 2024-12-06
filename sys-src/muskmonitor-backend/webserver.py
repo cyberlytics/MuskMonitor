@@ -1,4 +1,3 @@
-# %%
 from flask import Flask, request, jsonify
 from flask_weaviate import FlaskWeaviate
 from flask_pymongo import PyMongo
@@ -6,10 +5,8 @@ from pymongo import MongoClient
 import bson.json_util
 import logging
 
-# %%
 from sentiment_analyse import *
 
-# %%
 logger = logging.getLogger("Backend")
 logger.setLevel(logging.DEBUG)
 
