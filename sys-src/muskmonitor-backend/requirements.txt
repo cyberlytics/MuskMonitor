@@ -5,3 +5,6 @@ pymongo
 pytest
 pytest-flask
 bs4
+transformers
+numpy
+scipy
