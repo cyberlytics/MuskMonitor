@@ -24,7 +24,8 @@ weaviate = FlaskWeaviate(app)
 mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
-
+tweets_database = mongo["tweet_data"]
+tweets_collection = tweets_database["elon_musk"]
 
 @app.route("/")
 def home():
@@ -41,21 +42,29 @@ def get_stock_data():
     return bson.json_util.dumps(tesla_stock.find({}))
 
 
-@app.route("/analyze_sentiments", methods=["POST"])
+@app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():
     """
     Endpoint zum Durchführen der Sentiment-Analyse.
     Erwartet ein JSON mit einer Liste von Texten.
     """
     try:
-        data = request.get_json()  # Empfang der JSON-Daten im POST-Request
-        tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
+        #data = request.get_json()  # Empfang der JSON-Daten im POST-Request
+        #tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
-        # Führe die Sentiment-Analyse durch
-        result = analyse_and_return_json(tweets)
+        ## Führe die Sentiment-Analyse durch
+        #result = analyse_and_return_json(tweets)
 
+        tweets_from_db = tweets_collection.find({})
+        tweets_text = [tweet["description"] for tweet in tweets_from_db]
+        result = analyse_and_return_json(tweets_text)
+
+        for sentiment_result, tweet in zip(result, tweets_from_db):
+            tweet["class"] = sentiment_result["sentiment"]
+
+        return jsonify(tweets_from_db)
         # Sende das Ergebnis zurück als JSON-Antwort
-        return jsonify(result)
+        #return jsonify(result)
     except Exception as e:
         logger.error(f"Fehler bei der Analyse: {str(e)}")
         return (
