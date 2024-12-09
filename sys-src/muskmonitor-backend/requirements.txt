@@ -1,4 +1,11 @@
 flask
 flask_weaviate
+Flask-PyMongo
+pymongo
 pytest
 pytest-flask
+bs4
+transformers
+numpy
+scipy
+torch

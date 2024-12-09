@@ -14,18 +14,27 @@ function ShowStock() {
     const API_KEY = 'BJ22JP64AWPTKJN2';
     const symbol = 'TSLA';
     
-    axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`)
+    axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${API_KEY}`)
       .then(response => {
         const timeSeries = response.data['Time Series (Daily)'];
         const formattedData = Object.keys(timeSeries).map(date => ({
           Datum: date,
-          Schluss: parseFloat(timeSeries[date]['4. close']),
-          Volumen: parseInt(timeSeries[date]['5. volume']),
-          Eröffnungskurs: parseFloat(timeSeries[date]['1. open']),
-          Hoch: parseFloat(timeSeries[date]['2. high']),
-          Tief: parseFloat(timeSeries[date]['3. low'])
+          open: parseFloat(timeSeries[date]['1. open']),
+          high: parseFloat(timeSeries[date]['2. high']),
+          low: parseFloat(timeSeries[date]['3. low']),
+          close: parseFloat(timeSeries[date]['4. close']),
+          volume: parseInt(timeSeries[date]['5. volume'])
         }));
         setData(formattedData.reverse());
+
+        // Daten in tsla.json speichern
+        const blob = new Blob([JSON.stringify(formattedData, null, 4)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tsla.json';
+        a.click();
+        URL.revokeObjectURL(url);
       });
 
     fetch('/tweets.json')
@@ -72,11 +81,11 @@ function ShowStock() {
         lastDate.setDate(lastDate.getDate() + 1);
         extendedData.push({
           Datum: lastDate.toISOString().split('T')[0],
-          Schluss: null,
-          Volumen: null,
-          Eröffnungskurs: null,
-          Hoch: null,
-          Tief: null
+          open: null,
+          high: null,
+          low: null,
+          close: null,
+          volume: null
         });
       }
     }
@@ -117,10 +126,11 @@ function ShowStock() {
       <h1>Stock Data Visualization</h1>
       <label htmlFor="dataKey">Select Data Key: </label>
       <select id="dataKey" value={selectedDataKey} onChange={handleChange}>
-        <option value="Schluss">Schluss</option>
-        <option value="Eröffnungskurs">Eröffnungskurs</option>
-        <option value="Hoch">Hoch</option>
-        <option value="Tief">Tief</option>
+        <option value="open">Open</option>
+        <option value="high">High</option>
+        <option value="low">Low</option>
+        <option value="close">Close</option>
+        <option value="volume">Volume</option>
       </select>
       <br />
       <div className="input-container">
