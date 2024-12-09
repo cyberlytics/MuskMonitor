@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import './ShowStock.css';
 
 function ShowStock() {
   const [data, setData] = useState([]);
@@ -111,21 +112,29 @@ function ShowStock() {
   return (
     <div>
       <h1>Stock Data Visualization</h1>
-      <label htmlFor="dataKey">Select Data Key: </label>
-      <select id="dataKey" value={selectedDataKey} onChange={handleChange}>
-        <option value="Schluss">Schluss</option>
-        <option value="Eröffnungskurs">Eröffnungskurs</option>
-        <option value="Hoch">Hoch</option>
-        <option value="Tief">Tief</option>
-      </select>
-      <br />
-      <label htmlFor="startDate">Start Date: </label>
-      <input type="date" id="startDate" value={startDate} onChange={handleStartDateChange} />
-      <label htmlFor="endDate">End Date: </label>
-      <input type="date" id="endDate" value={endDate} onChange={handleEndDateChange} />
-      <br />
-      <label htmlFor="showSecondGraph">Vorhersage: </label>
-      <input type="checkbox" id="showSecondGraph" checked={showSecondGraph} onChange={handleCheckboxChange} />
+      <div className="form-container">
+        <div className="select-container">
+          <label htmlFor="dataKey">Kursdaten: </label>
+          <select id="dataKey" value={selectedDataKey} onChange={handleChange}>
+            <option value="Schluss">Schluss</option>
+            <option value="Eröffnungskurs">Eröffnungskurs</option>
+            <option value="Hoch">Hoch</option>
+            <option value="Tief">Tief</option>
+          </select>
+        </div>
+        <div className="input-container">
+          <label htmlFor="startDate">Anfangsdatum: </label>
+          <input type="date" id="startDate" value={startDate} onChange={handleStartDateChange} />
+        </div>
+        <div className="input-container">
+          <label htmlFor="endDate">End Date: </label>
+          <input type="date" id="endDate" value={endDate} onChange={handleEndDateChange} />
+        </div>
+        <div className="input-container">
+          <label htmlFor="showSecondGraph">Vorhersage: </label>
+          <input type="checkbox" id="showSecondGraph" checked={showSecondGraph} onChange={handleCheckboxChange} />
+        </div>
+      </div>
       {extendedData.length > 0 ? (
         <LineChart width={1200} height={600} data={extendedData}>
           <CartesianGrid strokeDasharray="3 3" />
