@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Drawer, IconButton, List, ListItem, ListItemText } from '@material-ui/core';
-import MenuIcon from '@material-ui/icons/Menu';
-import CloseIcon from '@material-ui/icons/Close';
-import './HamburgerMenu.css';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
+import "./HamburgerMenu.css";
 
 function HamburgerMenu() {
   const [open, setOpen] = useState(false);
