@@ -9,7 +9,7 @@ export default function TimeSeriesDisplay() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch("/tweets_with_classes.json")
+    fetch("/analyze_sentiments")
       .then((response) => response.json())
       .then((data) => {
         const dataArray = Object.keys(data).map((key) => ({
