@@ -1,14 +1,10 @@
-import React from 'react';
-import ShowStock from '../components/ShowStock.jsx';
-import HamburgerMenu from '../components/HamburgerMenu.jsx';
+import React from "react";
+import TimeSeriesDisplay from "../components/timeSeriesDisplay";
 
-function ShowStockPage() {
+export default function ShowTweets() {
   return (
     <div>
-      <HamburgerMenu />
-      <ShowStock />
+      <TimeSeriesDisplay filePath="/tweets.json" interval={2000} />
     </div>
   );
 }
-
-export default ShowStockPage;
