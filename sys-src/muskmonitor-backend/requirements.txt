@@ -1,6 +1,7 @@
 flask
 flask_weaviate
 Flask-PyMongo
+flask_apscheduler
 pymongo
 pytest
 pytest-flask
