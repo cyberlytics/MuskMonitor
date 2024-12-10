@@ -36,25 +36,32 @@ scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-API_KEY = "BJ22JP64AWPTKJN2"
+#API_KEY = "BJ22JP64AWPTKJN2"
+API_KEY = "0HODL581Z1697EQ7"
 symbol = "TSLA"
 
 # Run this task at midnight everyday.
 @scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
 def scrape_tesla_stock_daily():
-    response = requests.get(f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&outputsize=full&apikey={API_KEY}")
-    data = response.json()["Time Series (Daily)"]
-    
-    for date, stock_data in data.items():
-        if tesla_stock.count_documents({"Datum": date}) == 0:
-            tesla_stock.insert_one({
-                "Datum": date,
-                "open": stock_data["1. open"],
-                "high": stock_data["2. high"],
-                "low": stock_data["3. low"],
-                "close": stock_data["4. close"],
-                "volume": stock_data["5. volume"],
-            })
+    # Prevent exceptions when scraping too much data in a single day from crashing the server.
+    try:
+        response = requests.get(f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&outputsize=full&apikey={API_KEY}")
+        data = response.json()["Time Series (Daily)"]
+        
+        for date, stock_data in data.items():
+            if tesla_stock.count_documents({"Datum": date}) == 0:
+                to_insert = {
+                    "Datum": date,
+                    "open": stock_data["1. open"],
+                    "high": stock_data["2. high"],
+                    "low": stock_data["3. low"],
+                    "close": stock_data["4. close"],
+                    "volume": stock_data["5. volume"],
+                }
+                tesla_stock.insert_one(to_insert)
+                logger.info(f"Inserted: {to_insert}")
+    except Exception as e:
+        logger.info(f"Exception getting stock data from alpha vantage: {e}")
 
 @app.route('/')
 def home():
@@ -70,7 +77,7 @@ def home():
 def get_stock_data():
     # PyMongo queries return a cursor on the data.
     # An empty query '{}' returns all data in the collection.
-    return bson.json_util.dumps(tesla_stock.find({}))
+    return bson.json_util.dumps(tesla_stock.find({}).sort("Datum"))
     # return bson.json_util.dumps(mongo.db["tesla"].find({}))
 
 if __name__ == '__main__':

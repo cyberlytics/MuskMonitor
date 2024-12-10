@@ -6,3 +6,5 @@ pymongo
 pytest
 pytest-flask
 bs4
+requests
+yfinance
