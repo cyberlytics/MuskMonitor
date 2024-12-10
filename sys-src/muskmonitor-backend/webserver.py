@@ -1,11 +1,9 @@
 from flask import Flask, request, jsonify
-from flask_weaviate import FlaskWeaviate
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
 import bson.json_util
 import logging
-
-from sentiment_analyse import *
+from sentiment_analyse import analyse_and_return_json
 
 logger = logging.getLogger("Backend")
 logger.setLevel(logging.DEBUG)
@@ -18,9 +16,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
-app.config["WEAVIATE_URL"] = "http://vector-database:8080"
-weaviate = FlaskWeaviate(app)
-
 mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
@@ -28,11 +23,6 @@ tesla_stock = stock_database["tesla"]
 
 @app.route("/")
 def home():
-    c = weaviate.client
-    c.connect()
-    logger.info(c.is_connected())
-    logger.info(c.get_meta())
-    c.close()
     return "Hello, World!"
 
 
