@@ -34,6 +34,9 @@ def test_get_stock_data(client, monkeypatch):
 
     class MockCollection:
         def find(self, query):
+            return self
+
+        def sort(self, key):
             return [{"name": "Tesla", "price": 650}]
 
     mock_collection = MockCollection()
