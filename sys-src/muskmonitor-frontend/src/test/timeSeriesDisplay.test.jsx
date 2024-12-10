@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import TimeSeriesDisplay from "../components/TimeSeriesDisplay";
+import TimeSeriesDisplay from "../components/timeSeriesDisplay.jsx";
 
 global.IntersectionObserver = class {
   constructor() {}
