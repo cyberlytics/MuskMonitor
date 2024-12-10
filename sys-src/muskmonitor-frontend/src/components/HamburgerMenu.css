@@ -1,0 +1,15 @@
+.hamburger-menu {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+  }
+  
+  .drawer-content {
+    position: relative;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+  }
