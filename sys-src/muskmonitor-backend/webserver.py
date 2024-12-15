@@ -6,7 +6,7 @@ import logging
 from sentiment_analyse import analyse_and_return_json
 from flask_apscheduler import APScheduler
 import requests
-from x_scaper.nitter_scraper import *
+from x_scraper.nitter_scraper import *
 
 class FlaskAPSchedulerConfig:
     SCHEDULER_API_ENABLED = True
