@@ -29,13 +29,16 @@ tesla_stock = stock_database["tesla"]
 
 scheduler = APScheduler()
 scheduler.init_app(app)
+#scheduler.api_enabled = True
 scheduler.start()
 
 #API_KEY = "BJ22JP64AWPTKJN2"
 API_KEY = "0HODL581Z1697EQ7"
 symbol = "TSLA"
 
-current_app.scraper_status = {"last_run": None, "new_tweets": 0}
+with app.app_context():
+    current_app.scraper_status = {"last_run": None, "new_tweets": 0}
+
 json_file = "nitter_latest_tweets.json"
 
 # Run this task at midnight everyday.
@@ -61,33 +64,34 @@ def scrape_tesla_stock_daily():
     except Exception as e:
         logger.info(f"Exception getting stock data from alpha vantage: {e}")
 
-# Run this task every 10 minutes.
-@scheduler.task("cron", id="scrape_tweets_daily", minutes=10)
+# Run this task every 30 minutes.
+@scheduler.task("interval", id="scrape_tweets_daily", minutes=30)
 def scrape_tweets_daily():
-    """Function to run the scraper periodically."""
-    new_tweets = fetch_tweets_from_nitter()
-    if not new_tweets:
-        print("No new tweets fetched.")
-        current_app.scraper_status["new_tweets"] = 0
-        return
+    with app.app_context():
+        """Function to run the scraper periodically."""
+        new_tweets = fetch_tweets_from_nitter()
+        if not new_tweets:
+            print("No new tweets fetched.")
+            current_app.scraper_status["new_tweets"] = 0
+            return
 
-    existing_tweets = load_existing_tweets(json_file)
-    existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
+        existing_tweets = load_existing_tweets(json_file)
+        existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
 
-    unique_tweets = [tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids]
+        unique_tweets = [tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids]
 
-    if unique_tweets:
-        print(f"Adding {len(unique_tweets)} new tweets.")
-        updated_tweets = unique_tweets + existing_tweets
-        # Reassign tweet counts for all tweets
-        for i, tweet in enumerate(updated_tweets, start=1):
-            tweet["Tweet_count"] = i
-        save_tweets(json_file, updated_tweets)
-        current_app.scraper_status["new_tweets"] = len(unique_tweets)
-    else:
-        print("No new tweets to add.")
-        current_app.scraper_status["new_tweets"] = 0
-    current_app.scraper_status["last_run"] = "Ran successfully"
+        if unique_tweets:
+            print(f"Adding {len(unique_tweets)} new tweets.")
+            updated_tweets = unique_tweets + existing_tweets
+            # Reassign tweet counts for all tweets
+            for i, tweet in enumerate(updated_tweets, start=1):
+                tweet["Tweet_count"] = i
+            save_tweets(json_file, updated_tweets)
+            current_app.scraper_status["new_tweets"] = len(unique_tweets)
+        else:
+            print("No new tweets to add.")
+            current_app.scraper_status["new_tweets"] = 0
+        current_app.scraper_status["last_run"] = "Ran successfully"
 
 
 @app.route("/")
@@ -124,14 +128,16 @@ def analyse_sentiments():
     
 @app.route("/start-scraper")
 def start_scraper():
-    """Manually trigger the scraper."""
-    scrape_tweets_daily()
-    return jsonify({"message": "Scraper executed manually.", "status": current_app.scraper_status})
+    with app.app_context():
+        """Manually trigger the scraper."""
+        scrape_tweets_daily()
+        return jsonify({"message": "Scraper executed manually.", "status": current_app.scraper_status})
 
 @app.route("/scraper-status")
 def scraper_status_endpoint():
-    """Check the status of the scraper."""
-    return jsonify(current_app.scraper_status)
+    with app.app_context():
+        """Check the status of the scraper."""
+        return jsonify(current_app.scraper_status)
 
 if __name__ == "__main__":
     try:
