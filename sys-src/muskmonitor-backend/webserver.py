@@ -39,7 +39,7 @@ symbol = "TSLA"
 with app.app_context():
     current_app.scraper_status = {"last_run": None, "new_tweets": 0}
 
-json_file = "nitter_latest_tweets.json"
+json_file = "x_scraper/nitter_latest_tweets.json"
 
 # Run this task at midnight everyday.
 @scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
