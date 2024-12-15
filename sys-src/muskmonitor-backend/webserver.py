@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, current_app
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
 import bson.json_util
@@ -22,6 +22,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
+app.config.from_object(FlaskAPSchedulerConfig)
 mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
@@ -34,7 +35,8 @@ scheduler.start()
 API_KEY = "0HODL581Z1697EQ7"
 symbol = "TSLA"
 
-scraper_status = {"last_run": None, "new_tweets": 0}
+current_app.scraper_status = {"last_run": None, "new_tweets": 0}
+json_file = "nitter_latest_tweets.json"
 
 # Run this task at midnight everyday.
 @scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
@@ -59,32 +61,33 @@ def scrape_tesla_stock_daily():
     except Exception as e:
         logger.info(f"Exception getting stock data from alpha vantage: {e}")
 
-# Run this task every 5 minutes.
-@scheduler.task("cron", id="scrape_tweets_daily", minute=5)
+# Run this task every 10 minutes.
+@scheduler.task("cron", id="scrape_tweets_daily", minutes=10)
 def scrape_tweets_daily():
     """Function to run the scraper periodically."""
-    global scraper_status
     new_tweets = fetch_tweets_from_nitter()
     if not new_tweets:
         print("No new tweets fetched.")
-        scraper_status["new_tweets"] = 0
+        current_app.scraper_status["new_tweets"] = 0
         return
 
     existing_tweets = load_existing_tweets(json_file)
-    existing_timestamps = {tweet["Created_At"] for tweet in existing_tweets}
+    existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
 
-    unique_tweets = [tweet for tweet in new_tweets if tweet["Created_At"] not in existing_timestamps]
+    unique_tweets = [tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids]
+
     if unique_tweets:
         print(f"Adding {len(unique_tweets)} new tweets.")
         updated_tweets = unique_tweets + existing_tweets
+        # Reassign tweet counts for all tweets
         for i, tweet in enumerate(updated_tweets, start=1):
             tweet["Tweet_count"] = i
         save_tweets(json_file, updated_tweets)
-        scraper_status["new_tweets"] = len(unique_tweets)
+        current_app.scraper_status["new_tweets"] = len(unique_tweets)
     else:
         print("No new tweets to add.")
-        scraper_status["new_tweets"] = 0
-    scraper_status["last_run"] = "Ran successfully"
+        current_app.scraper_status["new_tweets"] = 0
+    current_app.scraper_status["last_run"] = "Ran successfully"
 
 
 @app.route("/")
@@ -123,13 +126,16 @@ def analyse_sentiments():
 def start_scraper():
     """Manually trigger the scraper."""
     scrape_tweets_daily()
-    return jsonify({"message": "Scraper executed manually.", "status": scraper_status})
+    return jsonify({"message": "Scraper executed manually.", "status": current_app.scraper_status})
 
 @app.route("/scraper-status")
 def scraper_status_endpoint():
     """Check the status of the scraper."""
-    return jsonify(scraper_status)
+    return jsonify(current_app.scraper_status)
 
 if __name__ == "__main__":
-    # Starte die Flask-Anwendung im Debug-Modus
-    app.run(debug=True)
+    try:
+        # Starte die Flask-Anwendung im Debug-Modus
+        app.run(debug=True)
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()

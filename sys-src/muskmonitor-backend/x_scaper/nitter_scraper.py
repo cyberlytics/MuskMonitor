@@ -6,7 +6,6 @@ import os
 # Configuration
 username = "elonmusk"
 base_url = f"https://nitter.privacydev.net/{username}/with_replies"
-json_file = "nitter_latest_tweets.json"
 
 import time
 
@@ -83,34 +82,3 @@ def save_tweets(file_path, tweets):
     """Save tweets to the JSON file."""
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(tweets, file, indent=4)
-
-
-def main():
-    # Fetch tweets from Nitter
-    new_tweets = fetch_tweets_from_nitter()
-    if not new_tweets:
-        print("No new tweets fetched.")
-        return
-
-    # Load existing tweets
-    existing_tweets = load_existing_tweets(json_file)
-
-    # Create a set of existing tweet IDs for quick lookup
-    existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
-
-    # Add only new tweets
-    unique_tweets = [tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids]
-
-    if unique_tweets:
-        print(f"Adding {len(unique_tweets)} new tweets.")
-        updated_tweets = unique_tweets + existing_tweets
-        # Reassign tweet counts for all tweets
-        for i, tweet in enumerate(updated_tweets, start=1):
-            tweet["Tweet_count"] = i
-        save_tweets(json_file, updated_tweets)
-    else:
-        print("No new tweets to add.")
-
-
-if __name__ == "__main__":
-    main()
