@@ -6,6 +6,7 @@ import logging
 from sentiment_analyse import analyse_and_return_json
 from flask_apscheduler import APScheduler
 import requests
+from x_scaper.nitter_scraper import *
 
 class FlaskAPSchedulerConfig:
     SCHEDULER_API_ENABLED = True
@@ -33,6 +34,8 @@ scheduler.start()
 API_KEY = "0HODL581Z1697EQ7"
 symbol = "TSLA"
 
+scraper_status = {"last_run": None, "new_tweets": 0}
+
 # Run this task at midnight everyday.
 @scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
 def scrape_tesla_stock_daily():
@@ -55,6 +58,33 @@ def scrape_tesla_stock_daily():
                 logger.info(f"Inserted: {to_insert}")
     except Exception as e:
         logger.info(f"Exception getting stock data from alpha vantage: {e}")
+
+# Run this task every 5 minutes.
+@scheduler.task("cron", id="scrape_tweets_daily", minute=5)
+def scrape_tweets_daily():
+    """Function to run the scraper periodically."""
+    global scraper_status
+    new_tweets = fetch_tweets_from_nitter()
+    if not new_tweets:
+        print("No new tweets fetched.")
+        scraper_status["new_tweets"] = 0
+        return
+
+    existing_tweets = load_existing_tweets(json_file)
+    existing_timestamps = {tweet["Created_At"] for tweet in existing_tweets}
+
+    unique_tweets = [tweet for tweet in new_tweets if tweet["Created_At"] not in existing_timestamps]
+    if unique_tweets:
+        print(f"Adding {len(unique_tweets)} new tweets.")
+        updated_tweets = unique_tweets + existing_tweets
+        for i, tweet in enumerate(updated_tweets, start=1):
+            tweet["Tweet_count"] = i
+        save_tweets(json_file, updated_tweets)
+        scraper_status["new_tweets"] = len(unique_tweets)
+    else:
+        print("No new tweets to add.")
+        scraper_status["new_tweets"] = 0
+    scraper_status["last_run"] = "Ran successfully"
 
 
 @app.route("/")
@@ -88,7 +118,17 @@ def analyse_sentiments():
             jsonify({"error": "Invalid request, please provide a list of tweets."}),
             400,
         )
+    
+@app.route("/start-scraper")
+def start_scraper():
+    """Manually trigger the scraper."""
+    scrape_tweets_daily()
+    return jsonify({"message": "Scraper executed manually.", "status": scraper_status})
 
+@app.route("/scraper-status")
+def scraper_status_endpoint():
+    """Check the status of the scraper."""
+    return jsonify(scraper_status)
 
 if __name__ == "__main__":
     # Starte die Flask-Anwendung im Debug-Modus
