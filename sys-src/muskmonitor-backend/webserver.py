@@ -112,11 +112,11 @@ def analyse_sentiments():
     Erwartet ein JSON mit einer Liste von Texten.
     """
     try:
-        #data = request.get_json()  # Empfang der JSON-Daten im POST-Request
-        #tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
+        data = request.get_json()  # Empfang der JSON-Daten im POST-Request
+        tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         ## Führe die Sentiment-Analyse durch
-        #result = analyse_and_return_json(tweets)
+        result = analyse_and_return_json(tweets)
 
         tweets_from_db = tweets_collection.find({})
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
@@ -125,7 +125,7 @@ def analyse_sentiments():
         for sentiment_result, tweet in zip(result, tweets_from_db):
             tweet["Class"] = sentiment_result["sentiment"]
 
-        return bson.json_util.dumps(tweets_from_db)
+        return jsonify(bson.json_util.dumps(tweets_from_db))
         # Sende das Ergebnis zurück als JSON-Antwort
         #return jsonify(result)
     except Exception as e:
