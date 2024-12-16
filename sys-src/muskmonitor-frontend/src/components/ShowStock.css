@@ -1,0 +1,40 @@
+/* ShowStock.css */
+.input-container,
+.select-container {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.input-container label,
+.select-container label {
+  margin-right: 10px;
+}
+
+.input-container input[type="date"],
+.input-container input[type="checkbox"],
+.select-container select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.input-container input[type="checkbox"] {
+  width: auto;
+  margin-left: 5px;
+}
+
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}

@@ -133,13 +133,18 @@ function ShowStock() {
         <option value="volume">Volume</option>
       </select>
       <br />
-      <label htmlFor="startDate">Start Date: </label>
-      <input type="date" id="startDate" value={startDate} onChange={handleStartDateChange} />
-      <label htmlFor="endDate">End Date: </label>
-      <input type="date" id="endDate" value={endDate} onChange={handleEndDateChange} />
-      <br />
-      <label htmlFor="showSecondGraph">Vorhersage: </label>
-      <input type="checkbox" id="showSecondGraph" checked={showSecondGraph} onChange={handleCheckboxChange} />
+      <div className="input-container">
+        <label htmlFor="startDate">Start Date: </label>
+        <input type="date" id="startDate" value={startDate} onChange={handleStartDateChange} />
+      </div>
+      <div className="input-container">
+        <label htmlFor="endDate">End Date: </label>
+        <input type="date" id="endDate" value={endDate} onChange={handleEndDateChange} />
+      </div>
+      <div className="input-container">
+        <label htmlFor="showSecondGraph">Vorhersage: </label>
+        <input type="checkbox" id="showSecondGraph" checked={showSecondGraph} onChange={handleCheckboxChange} />
+      </div>
       {extendedData.length > 0 ? (
         <LineChart width={1200} height={600} data={extendedData}>
           <CartesianGrid strokeDasharray="3 3" />
