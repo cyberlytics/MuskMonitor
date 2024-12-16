@@ -8,21 +8,21 @@ services:
     volumes:
     - "MongoDB_Data:/data/db"
 
-  vector-database:
-    image: cr.weaviate.io/semitechnologies/weaviate
-    command: "--host 0.0.0.0 --port '8080' --scheme http"
-    # ports:
-    # - "3579:8080" # HTTP
-    # - "50051:50051" # gRPC
-    environment:
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
-      PERSISTENCE_DATA_PATH: "/var/lib/weaviate_data"
-      DEFAULT_VECTORIZER_MODULE: "none"
-      CLUSTER_HOSTNAME: "node1"
-      LIMIT_RESOURCES: "true"
-    volumes:
-    - "Weaviate_Data:/var/lib/weaviate_data"
+  #vector-database:
+    #image: cr.weaviate.io/semitechnologies/weaviate
+    #command: "--host 0.0.0.0 --port '8080' --scheme http"
+    ## ports:
+    ## - "3579:8080" # HTTP
+    ## - "50051:50051" # gRPC
+    #environment:
+      #QUERY_DEFAULTS_LIMIT: 25
+      #AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      #PERSISTENCE_DATA_PATH: "/var/lib/weaviate_data"
+      #DEFAULT_VECTORIZER_MODULE: "none"
+      #CLUSTER_HOSTNAME: "node1"
+      #LIMIT_RESOURCES: "true"
+    #volumes:
+    #- "Weaviate_Data:/var/lib/weaviate_data"
 
   flask-backend:
     build: ./muskmonitor-backend
@@ -31,7 +31,9 @@ services:
      - "5000:5000"
     depends_on:
      - stock-database
-     - vector-database
+     #- vector-database
+    volumes:
+    - "./muskmonitor-backend/webserver.py:/app/webserver.py"
 
   react-frontend:
     build: ./muskmonitor-frontend
@@ -48,18 +50,18 @@ services:
       #- flask-backend
       - react-frontend
 
-  flask-tests:
-    build: ./muskmonitor-backend
-    command: pytest --maxfail=1 --disable-warnings
-    depends_on:
-      - stock-database
-      - vector-database
+  #flask-tests:
+    #build: ./muskmonitor-backend
+    #command: pytest --maxfail=1 --disable-warnings
+    #depends_on:
+      #- stock-database
+      #- vector-database
 
-  react-tests:
-    build:
-      context: ./muskmonitor-frontend
-      target: build
-    command: npm run test -- --run
+  #react-tests:
+    #build:
+      #context: ./muskmonitor-frontend
+      #target: build
+    #command: npm run test -- --run
 
 volumes:
   Weaviate_Data:

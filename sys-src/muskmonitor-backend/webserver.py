@@ -3,7 +3,7 @@ from flask_pymongo import PyMongo
 from pymongo import MongoClient
 import bson.json_util
 import logging
-from sentiment_analyse import analyse_and_return_json
+#from sentiment_analyse import analyse_and_return_json
 from flask_apscheduler import APScheduler
 import requests
 from x_scraper.nitter_scraper import *
@@ -42,7 +42,7 @@ with app.app_context():
 json_file = "x_scraper/nitter_latest_tweets.json"
 
 # Run this task at midnight everyday.
-@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
+@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=1, minute=0, misfire_grace_time=900, coalesce=True)
 def scrape_tesla_stock_daily():
     # Prevent exceptions when scraping too much data in a single day from crashing the server.
     try:
@@ -115,7 +115,8 @@ def analyse_sentiments():
         tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         # Führe die Sentiment-Analyse durch
-        result = analyse_and_return_json(tweets)
+        #result = analyse_and_return_json(tweets)
+        result = None
 
         # Sende das Ergebnis zurück als JSON-Antwort
         return jsonify(result)

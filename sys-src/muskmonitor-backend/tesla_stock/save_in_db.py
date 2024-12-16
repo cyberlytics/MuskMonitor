@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import json
 import datetime
 import yfinance
+import requests
 
 mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stockDB = mongoClient["stock_data"]
