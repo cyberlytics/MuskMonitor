@@ -43,7 +43,7 @@ with app.app_context():
 json_file = "x_scraper/nitter_latest_tweets.json"
 
 # Run this task at midnight everyday.
-@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
+@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=1, minute=0, misfire_grace_time=900, coalesce=True)
 def scrape_tesla_stock_daily():
     # Prevent exceptions when scraping too much data in a single day from crashing the server.
     try:
@@ -115,8 +115,9 @@ def analyse_sentiments():
         data = request.get_json()  # Empfang der JSON-Daten im POST-Request
         tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
-        ## Führe die Sentiment-Analyse durch
-        result = analyse_and_return_json(tweets)
+        # Führe die Sentiment-Analyse durch
+        #result = analyse_and_return_json(tweets)
+        result = None
 
         tweets_from_db = tweets_collection.find({})
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
