@@ -7,9 +7,10 @@ import time
 mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
 tweets_db = mongoClient["tweet_data"]
 tweets_collection = tweets_db["elon_musk"]
+tweets_collection.drop()
 
 def sort_tweets_by_dates(tweet):
-    return datetime.datetime.strptime(tweet["date"], "%Y-%m-%d")
+    return datetime.datetime.strptime(tweet["Date"], "%Y-%m-%d %H:%M")
 
 # Specify 'tweets'-folder, because the current directory when CMD in Dockerfile
 # is executed is 'app' (contains all files in 'muskmonitor-backend') so 'open' can't
@@ -20,18 +21,26 @@ with open("tweets/tweets.json", "r") as json_file:
 
     for tweet in json_data["tweets"]:
         tweet_text = tweet["text"]
+        tweet_date = tweet["date"]
         # Extract date from tweet date removing information about hours.
-        tweet_date = re.match(r"\w{3}\s\d{2},\s\d{4}", tweet["date"])[0]
-        month, day, year = tweet_date.split(" ")
+        date = re.match(r"\w{3}\s\d{2},\s\d{4}", tweet_date)[0]
+        month, day, year = date.split(" ")
         # Convert months from abbreviated strings to numbers (e.g. 'Nov' to '11').
         month = time.strptime(month, "%b").tm_mon
         # Remove trailing ','.
         day = day[:-1]
-        tweet_date = f"{year}-{month}-{day}"
+        date = f"{year}-{month}-{day}"
+
+        tweet_time = tweet_date[tweet_date.index(":") - 2:].strip()
+        timestamp = re.match(r"\d{1,2}:\d{2}\s(AM|PM)", tweet_time)[0]
+        # Convert 12-hour format with AM/PM to 24-hour format.
+        timestamp = datetime.datetime.strptime(timestamp, "%I:%M %p")
+        timestamp = datetime.datetime.strftime(timestamp, "%H:%M")
+        datetimestamp = f"{date} {timestamp}"
+
         processed_tweets.append({
-            "date": tweet_date,
-            "title": "Elon Musk schreibt auf X",
-            "description": tweet_text
+            "Date": datetimestamp,
+            "Text": tweet_text
         })
 
     # Sort tweets in ascending order based on 'date' value of tweet objects.
@@ -40,7 +49,7 @@ with open("tweets/tweets.json", "r") as json_file:
     inserted = 0
 
     for sorted_tweet in sorted_tweets:
-        if not tweets_collection.find_one({"date": sorted_tweet["date"], "description": sorted_tweet["description"]}):
+        if not tweets_collection.find_one({"Date": sorted_tweet["Date"], "Text": sorted_tweet["Text"]}):
             tweets_collection.insert_one(sorted_tweet)
             inserted += 1
     
