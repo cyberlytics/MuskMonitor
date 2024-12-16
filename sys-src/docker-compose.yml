@@ -45,7 +45,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      #- flask-backend
+      - flask-backend
       - react-frontend
 
   flask-tests:
