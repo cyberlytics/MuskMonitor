@@ -54,6 +54,8 @@ services:
     depends_on:
       - stock-database
       - vector-database
+    volumes:
+    - "./muskmonitor-backend/test_app.py:/app/test_app.py"
 
   react-tests:
     build:
