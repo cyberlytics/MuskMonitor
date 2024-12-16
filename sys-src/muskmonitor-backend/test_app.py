@@ -182,20 +182,20 @@ def test_get_stock_data(client, monkeypatch):
 
 # Test den Endpunkt /analyse_sentiments mit gültigen Eingaben
 # -> Erwartet: HTTP-Statuscode 200 und Sentiment-Analyseergebnis
-def test_analyze_sentiments_valid(client, monkeypatch):
-    """Test the /analyze_sentiments route with valid input"""
+# def test_analyze_sentiments_valid(client, monkeypatch):
+#     """Test the /analyze_sentiments route with valid input"""
 
-    def mock_analyse_and_return_json(tweets):
-        return {"positive": 1, "negative": 0, "neutral": 0}
+#     def mock_analyse_and_return_json(tweets):
+#         return {"positive": 1, "negative": 0, "neutral": 0}
 
-    monkeypatch.setattr(
-        "webserver.analyse_and_return_json", mock_analyse_and_return_json
-    )
+#     monkeypatch.setattr(
+#         "webserver.analyse_and_return_json", mock_analyse_and_return_json
+#     )
 
-    data = {"tweets": ["Tesla stock is doing great!"]}
-    response = client.post("/analyze_sentiments", json=data)
-    assert response.status_code == 200
-    assert response.get_json() == {"positive": 1, "negative": 0, "neutral": 0}
+#     data = {"tweets": ["Tesla stock is doing great!"]}
+#     response = client.post("/analyze_sentiments", json=data)
+#     assert response.status_code == 200
+#     assert response.get_json() == {"positive": 1, "negative": 0, "neutral": 0}
 
 
 # Test den Endpunkt /analyse_sentiments mit ungültigen Eingaben

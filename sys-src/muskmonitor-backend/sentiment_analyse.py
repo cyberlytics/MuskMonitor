@@ -45,4 +45,5 @@ model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
 def analyse_and_return_json(input_texts):
     sentiments = analyse_sentiment_list(input_texts)
-    return json.dumps(sentiments, indent=4)
+    return sentiments
+    #return json.dumps(sentiments, indent=4)
