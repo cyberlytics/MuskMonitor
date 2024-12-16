@@ -7,6 +7,9 @@ from sentiment_analyse import analyse_and_return_json
 from flask_apscheduler import APScheduler
 import requests
 from x_scraper.nitter_scraper import *
+import re
+import time
+import datetime
 
 class FlaskAPSchedulerConfig:
     SCHEDULER_API_ENABLED = True
@@ -27,7 +30,8 @@ mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
 tweets_database = mongo["tweet_data"]
-tweets_collection = tweets_database["elon_musk"]
+elon_musk_tweets = tweets_database["elon_musk"]
+
 scheduler = APScheduler()
 scheduler.init_app(app)
 #scheduler.api_enabled = True
@@ -88,6 +92,30 @@ def scrape_tweets_daily():
             for i, tweet in enumerate(updated_tweets, start=1):
                 tweet["Tweet_count"] = i
             save_tweets(json_file, updated_tweets)
+
+            for tweet in updated_tweets:
+                tweet_text = tweet["Created_At"]
+                date = re.match(r"\w{3}\s\d{2},\s\d{4}", tweet_text)[0]
+                month, day, year = date.split(" ")
+                # Convert month abbreviations (Jan, Feb, ...) to number (1, 2, ...).
+                month = time.strptime(month, "%b").tm_mon
+                # Remove comma.
+                day = day[:-1]
+                date = f"{year}-{month}-{day}"
+
+                tweet_time = tweet_text[tweet_text.index(":") - 2:].strip()
+                timestamp = re.match(r"\d{1,2}:\d{2}\s(AM|PM)", tweet_time)[0]
+                # Convert 12-hour format with AM/PM to 24-hour format.
+                timestamp = datetime.datetime.strptime(timestamp, "%I:%M %p")
+                timestamp = datetime.datetime.strftime(timestamp, "%H:%M")
+                datetimestamp = f"{date} {timestamp}"
+
+                if elon_musk_tweets.count_documents({"Date": date}) == 0:
+                    elon_musk_tweets.insert_one({
+                        "Date": datetimestamp,
+                        "Text": tweet["Text"]
+                    })
+
             current_app.scraper_status["new_tweets"] = len(unique_tweets)
         else:
             print("No new tweets to add.")
@@ -119,7 +147,7 @@ def analyse_sentiments():
         #result = analyse_and_return_json(tweets)
         result = None
 
-        tweets_from_db = tweets_collection.find({})
+        tweets_from_db = elon_musk_tweets.find({})
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
         result = analyse_and_return_json(tweets_text)
 
