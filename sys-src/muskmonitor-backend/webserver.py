@@ -119,13 +119,13 @@ def analyse_sentiments():
         #result = analyse_and_return_json(tweets)
 
         tweets_from_db = tweets_collection.find({})
-        tweets_text = [tweet["description"] for tweet in tweets_from_db]
+        tweets_text = [tweet["Text"] for tweet in tweets_from_db]
         result = analyse_and_return_json(tweets_text)
 
         for sentiment_result, tweet in zip(result, tweets_from_db):
-            tweet["class"] = sentiment_result["sentiment"]
+            tweet["Class"] = sentiment_result["sentiment"]
 
-        return jsonify(tweets_from_db)
+        return bson.json_util.dumps(tweets_from_db)
         # Sende das Ergebnis zurück als JSON-Antwort
         #return jsonify(result)
     except Exception as e:
