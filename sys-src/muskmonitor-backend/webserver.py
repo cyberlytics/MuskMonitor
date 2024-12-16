@@ -133,7 +133,7 @@ def get_stock_data():
     return bson.json_util.dumps(tesla_stock.find({}).sort("Datum"))
 
 
-@app.route("/analyze_sentiments", methods=["POST"])
+@app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():
     """
     Endpoint zum Durchführen der Sentiment-Analyse.
@@ -144,11 +144,19 @@ def analyse_sentiments():
         tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         # Führe die Sentiment-Analyse durch
-        result = analyse_and_return_json(tweets)
+        #result = analyse_and_return_json(tweets)
         result = None
 
+        tweets_from_db = elon_musk_tweets.find({})
+        tweets_text = [tweet["Text"] for tweet in tweets_from_db]
+        result = analyse_and_return_json(tweets_text)
+
+        for sentiment_result, tweet in zip(result, tweets_from_db):
+            tweet["Class"] = sentiment_result["sentiment"]
+
+        return jsonify(bson.json_util.dumps(tweets_from_db))
         # Sende das Ergebnis zurück als JSON-Antwort
-        return jsonify(result)
+        #return jsonify(result)
     except Exception as e:
         logger.error(f"Fehler bei der Analyse: {str(e)}")
         return (
