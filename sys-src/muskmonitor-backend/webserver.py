@@ -3,16 +3,25 @@ from flask_pymongo import PyMongo
 from pymongo import MongoClient, DESCENDING, ASCENDING
 import bson.json_util
 import logging
-from sentiment_analyse import analyse_and_return_json
 from flask_apscheduler import APScheduler
 import requests
 from x_scraper.nitter_scraper import *
 import re
 import time
 import datetime
+from tesla_stock.stock_prediction import *
+
+from sentiment_analyse import analyse_and_return_json
+from x_scraper.nitter_scraper import (
+    fetch_tweets_from_nitter,
+    load_existing_tweets,
+    save_tweets,
+)
+
 
 class FlaskAPSchedulerConfig:
     SCHEDULER_API_ENABLED = True
+
 
 logger = logging.getLogger("Backend")
 logger.setLevel(logging.DEBUG)
@@ -34,11 +43,12 @@ elon_musk_tweets = tweets_database["elon_musk"]
 
 scheduler = APScheduler()
 scheduler.init_app(app)
-#scheduler.api_enabled = True
+# scheduler.api_enabled = True
 scheduler.start()
 
-#API_KEY = "BJ22JP64AWPTKJN2"
-API_KEY = "0HODL581Z1697EQ7"
+# API_KEY = "BJ22JP64AWPTKJN2"
+# Stock-API-Konfiguration
+API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "0HODL581Z1697EQ7")
 symbol = "TSLA"
 
 with app.app_context():
@@ -46,14 +56,17 @@ with app.app_context():
 
 json_file = "x_scraper/nitter_latest_tweets.json"
 
+
 # Run this task at midnight everyday.
 @scheduler.task("cron", id="scrape_tesla_stock_daily", hour=1, minute=0, misfire_grace_time=900, coalesce=True)
 def scrape_tesla_stock_daily():
     # Prevent exceptions when scraping too much data in a single day from crashing the server.
     try:
-        response = requests.get(f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&outputsize=full&apikey={API_KEY}")
+        response = requests.get(
+            f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&outputsize=full&apikey={API_KEY}"
+        )
         data = response.json()["Time Series (Daily)"]
-        
+
         for date, stock_data in data.items():
             if tesla_stock.count_documents({"Datum": date}) == 0:
                 to_insert = {
@@ -69,6 +82,7 @@ def scrape_tesla_stock_daily():
     except Exception as e:
         logger.info(f"Exception getting stock data from alpha vantage: {e}")
 
+
 # Run this task every 30 minutes.
 @scheduler.task("interval", id="scrape_tweets_daily", minutes=30)
 def scrape_tweets_daily():
@@ -83,7 +97,9 @@ def scrape_tweets_daily():
         existing_tweets = load_existing_tweets(json_file)
         existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
 
-        unique_tweets = [tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids]
+        unique_tweets = [
+            tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids
+        ]
 
         if unique_tweets:
             print(f"Adding {len(unique_tweets)} new tweets.")
@@ -128,9 +144,15 @@ def home():
     return "Hello, World!"
 
 
+# Alle gespeicherten Stock-Daten abrufen
 @app.route("/get_stock_data", methods=["GET", "POST"])
 def get_stock_data():
-    return bson.json_util.dumps(tesla_stock.find({}).sort("Datum"))
+    try:
+        stock_data = tesla_stock.find({}).sort("Datum")
+        return bson.json_util.dumps(stock_data)
+    except Exception as e:
+        logger.error(f"Error retrieving stock data: {e}")
+        return jsonify({"error": "Failed to fetch stock data"}), 500
 
 
 @app.route("/analyze_sentiments", methods=["GET", "POST"])
@@ -163,23 +185,49 @@ def analyse_sentiments():
             jsonify({"error": "Invalid request, please provide a list of tweets."}),
             400,
         )
-    
+
+
 @app.route("/start-scraper")
 def start_scraper():
     with app.app_context():
         """Manually trigger the scraper."""
         scrape_tweets_daily()
-        return jsonify({"message": "Scraper executed manually.", "status": current_app.scraper_status})
+        return jsonify(
+            {
+                "message": "Scraper executed manually.",
+                "status": current_app.scraper_status,
+            }
+        )
 
+
+# Status des Scrapers abrufen
 @app.route("/scraper-status")
 def scraper_status_endpoint():
     with app.app_context():
         """Check the status of the scraper."""
         return jsonify(current_app.scraper_status)
+    
+@app.route("/stock-prediction")
+def stock_prediction():
+    datafromdb = fetch_data_from_db()
+    train_data, test_data, scaler = prepare_data(datafromdb)
+    x_train, y_train = create_lstm_data(train_data)
+    x_test, y_test = create_lstm_data(test_data)
+    model = train_lstm_model(x_train, y_train)
+    predicted_values, actual_values, rmse = evaluate_and_plot(model, x_test, y_test, scaler)
 
+    # Combine the results into a response
+    response = {
+        "predicted_values": predicted_values,
+        "actual_values": actual_values,
+        "rmse": rmse
+    }
+
+    return jsonify(response)
+
+# Anwendung starten
 if __name__ == "__main__":
     try:
-        # Starte die Flask-Anwendung im Debug-Modus
         app.run(debug=True)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()

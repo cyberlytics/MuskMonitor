@@ -27,13 +27,16 @@ services:
   flask-backend:
     build: ./muskmonitor-backend
     container_name: flask-backend
+    volumes: 
+     - ./muskmonitor-backend:/app
     ports:
      - "5000:5000"
     depends_on:
      - stock-database
      - vector-database
-    # volumes:
-    # - "./muskmonitor-backend/webserver.py:/app/webserver.py"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
 
   react-frontend:
     build: ./muskmonitor-frontend
