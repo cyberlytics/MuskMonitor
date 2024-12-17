@@ -42,11 +42,11 @@ setup_db:
     - 'ssh -o StrictHostKeyChecking=no ubuntu@130.61.36.199 "cd /opt/muskmonitor/sys-src &&\
       sudo docker compose -f mongodb-sharding.yml down &&\
       sudo docker compose -f mongodb-sharding.yml up -d --build &&\
-      docker-compose exec stock-db-config-server sh -c "mongosh < /scripts/init-configserver.js" &&\
-      docker-compose exec stock-db-shard01-a sh -c "mongosh < /scripts/init-shard01.js" &&\
-      docker-compose exec stock-db-shard02-a sh -c "mongosh < /scripts/init-shard02.js" &&\
-      docker-compose exec stock-database sh -c "mongosh < /scripts/init-router.js" &&\
-      docker-compose exec stock-database sh -c "mongosh < /scripts/init_databases_and_collections.js --port 27017" &&\
+      docker-compose exec stock-db-config-server sh -c \"mongosh < /scripts/init-configserver.js\" &&\
+      docker-compose exec stock-db-shard01-a sh -c \"mongosh < /scripts/init-shard01.js\" &&\
+      docker-compose exec stock-db-shard02-a sh -c \"mongosh < /scripts/init-shard02.js\" &&\
+      docker-compose exec stock-database sh -c \"mongosh < /scripts/init-router.js\" &&\
+      docker-compose exec stock-database sh -c \"mongosh < /scripts/init_databases_and_collections.js --port 27017\" &&\
       docker-compose -f mongodb-sharding.yml down"'
   only:
     - main
