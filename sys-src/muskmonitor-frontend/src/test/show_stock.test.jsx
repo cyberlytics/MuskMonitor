@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ShowStock from '../components/ShowStock.jsx';
+import ShowStock from '../components/ShowStock_combined.jsx';
 import axios from 'axios';
 
 // Mock Axios and Fetch
