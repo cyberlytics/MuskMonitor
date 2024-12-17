@@ -54,12 +54,19 @@ def create_lstm_data(data, time_step=60):
     y_data = []
 
     for i in range(time_step, len(data)):
-        x_data.append(data[i - time_step : i, 0])
-        y_data.append(data[i, 0])
+        x_data.append(data[i - time_step : i, 0])  # Collect sequences
+        y_data.append(data[i, 0])  # Collect the target value
 
-    return torch.tensor(x_data, dtype=torch.float32).unsqueeze(-1), torch.tensor(
-        y_data, dtype=torch.float32
-    ).unsqueeze(-1)
+    # Convert lists to numpy arrays first
+    x_data = np.array(x_data)
+    y_data = np.array(y_data)
+
+    # Convert numpy arrays to PyTorch tensors
+    x_tensor = torch.tensor(x_data, dtype=torch.float32).unsqueeze(-1)  # Add a feature dimension
+    y_tensor = torch.tensor(y_data, dtype=torch.float32).unsqueeze(-1)
+
+    return x_tensor, y_tensor
+
 
 
 # LSTM Modelldefinition
@@ -125,22 +132,10 @@ def evaluate_and_plot(model, x_test, y_test, scaler):
     predictions = scaler.inverse_transform(predictions.reshape(-1, 1))
     y_test = scaler.inverse_transform(y_test.numpy().reshape(-1, 1))
 
-    rmse = np.sqrt(np.mean((y_test - predictions) ** 2))
-    print(f"RMSE: {rmse:.2f}")
+    rmse = np.sqrt(np.mean((y_test - predictions) ** 2)).item()  # Convert RMSE to Python float
 
 
-# Hauptfunktion
-def main(start_date="2023-01-01", end_date="2023-12-31"):
-    df = fetch_data_from_db(start_date, end_date)
-    if df.empty:
-        print("Keine Daten zum Verarbeiten.")
-        return
-    train_data, test_data, scaler = prepare_data(df)
-    x_train, y_train = create_lstm_data(train_data)
-    x_test, y_test = create_lstm_data(test_data)
-    model = train_lstm_model(x_train, y_train)
-    evaluate_and_plot(model, x_test, y_test, scaler)
+    predicted_values = predictions.flatten().tolist()
+    actual_values = y_test.flatten().tolist()
+    return predicted_values, actual_values, rmse
 
-
-if __name__ == "__main__":
-    main()

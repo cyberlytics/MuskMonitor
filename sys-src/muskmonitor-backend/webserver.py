@@ -6,6 +6,7 @@ import logging
 from flask_apscheduler import APScheduler
 import requests
 from x_scraper.nitter_scraper import *
+from tesla_stock.stock_prediction import *
 
 from sentiment_analyse import analyse_and_return_json
 from x_scraper.nitter_scraper import (
@@ -167,7 +168,24 @@ def scraper_status_endpoint():
     with app.app_context():
         """Check the status of the scraper."""
         return jsonify(current_app.scraper_status)
+    
+@app.route("/stock-prediction")
+def stock_prediction():
+    datafromdb = fetch_data_from_db()
+    train_data, test_data, scaler = prepare_data(datafromdb)
+    x_train, y_train = create_lstm_data(train_data)
+    x_test, y_test = create_lstm_data(test_data)
+    model = train_lstm_model(x_train, y_train)
+    predicted_values, actual_values, rmse = evaluate_and_plot(model, x_test, y_test, scaler)
 
+    # Combine the results into a response
+    response = {
+        "predicted_values": predicted_values,
+        "actual_values": actual_values,
+        "rmse": rmse
+    }
+
+    return jsonify(response)
 
 # Anwendung starten
 if __name__ == "__main__":
