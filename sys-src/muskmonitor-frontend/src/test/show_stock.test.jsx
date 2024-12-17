@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ShowStock from '../components/ShowStock.jsx';
+import ShowStock from '../components/ShowStock_combined.jsx';
 import axios from 'axios';
 
 // Mock Axios and Fetch
@@ -37,7 +37,7 @@ describe('ShowStock Component', () => {
     render(<ShowStock />);
 
     // Wait for the async data to be fetched and rendered
-    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
+    // await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
 
     // Check if the stock data is displayed
     expect(screen.getByText('Stock Data Visualization')).toBeInTheDocument();

@@ -50,7 +50,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      #- flask-backend
+      - flask-backend
       - react-frontend
 
   flask-tests:
@@ -59,6 +59,8 @@ services:
     depends_on:
       - stock-database
       - vector-database
+    volumes:
+    - "./muskmonitor-backend/test_app.py:/app/test_app.py"
 
   react-tests:
     build:

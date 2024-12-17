@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify, current_app
 from flask_pymongo import PyMongo
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING, ASCENDING
 import bson.json_util
 import logging
 from flask_apscheduler import APScheduler
 import requests
 from x_scraper.nitter_scraper import *
+import re
+import time
+import datetime
 from tesla_stock.stock_prediction import *
 
 from sentiment_analyse import analyse_and_return_json
@@ -35,6 +38,8 @@ app.config.from_object(FlaskAPSchedulerConfig)
 mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
+tweets_database = mongo["tweet_data"]
+elon_musk_tweets = tweets_database["elon_musk"]
 
 scheduler = APScheduler()
 scheduler.init_app(app)
@@ -53,7 +58,7 @@ json_file = "x_scraper/nitter_latest_tweets.json"
 
 
 # Run this task at midnight everyday.
-@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=0, minute=0)
+@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=1, minute=0, misfire_grace_time=900, coalesce=True)
 def scrape_tesla_stock_daily():
     # Prevent exceptions when scraping too much data in a single day from crashing the server.
     try:
@@ -103,6 +108,30 @@ def scrape_tweets_daily():
             for i, tweet in enumerate(updated_tweets, start=1):
                 tweet["Tweet_count"] = i
             save_tweets(json_file, updated_tweets)
+
+            for tweet in updated_tweets:
+                tweet_text = tweet["Created_At"]
+                date = re.match(r"\w{3}\s\d{2},\s\d{4}", tweet_text)[0]
+                month, day, year = date.split(" ")
+                # Convert month abbreviations (Jan, Feb, ...) to number (1, 2, ...).
+                month = time.strptime(month, "%b").tm_mon
+                # Remove comma.
+                day = day[:-1]
+                date = f"{year}-{month}-{day}"
+
+                tweet_time = tweet_text[tweet_text.index(":") - 2:].strip()
+                timestamp = re.match(r"\d{1,2}:\d{2}\s(AM|PM)", tweet_time)[0]
+                # Convert 12-hour format with AM/PM to 24-hour format.
+                timestamp = datetime.datetime.strptime(timestamp, "%I:%M %p")
+                timestamp = datetime.datetime.strftime(timestamp, "%H:%M")
+                datetimestamp = f"{date} {timestamp}"
+
+                if elon_musk_tweets.count_documents({"Date": date}) == 0:
+                    elon_musk_tweets.insert_one({
+                        "Date": datetimestamp,
+                        "Text": tweet["Text"]
+                    })
+
             current_app.scraper_status["new_tweets"] = len(unique_tweets)
         else:
             print("No new tweets to add.")
@@ -126,21 +155,30 @@ def get_stock_data():
         return jsonify({"error": "Failed to fetch stock data"}), 500
 
 
-@app.route("/analyze_sentiments", methods=["POST"])
+@app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():
     """
     Endpoint zum Durchführen der Sentiment-Analyse.
     Erwartet ein JSON mit einer Liste von Texten.
     """
     try:
-        data = request.get_json()  # Empfang der JSON-Daten im POST-Request
-        tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
+        # data = request.get_json()  # Empfang der JSON-Daten im POST-Request
+        # tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         # Führe die Sentiment-Analyse durch
-        result = analyse_and_return_json(tweets)
+        #result = analyse_and_return_json(tweets)
+        tweets_from_db = list(elon_musk_tweets.find({}).sort("Datum", ASCENDING))[-100:]
+        tweets_text = [tweet["Text"] for tweet in tweets_from_db]
+        sentiment_results = analyse_and_return_json(tweets_text)
 
+        for sentiment_result, tweet in zip(sentiment_results, tweets_from_db):
+            tweet["Class"] = sentiment_result["sentiment"]
+            tweet["Title"] = "Elon Musk schreibt auf X"
+            del tweet["_id"]
+            
+        return jsonify(tweets_from_db)
         # Sende das Ergebnis zurück als JSON-Antwort
-        return jsonify(result)
+        #return jsonify(result)
     except Exception as e:
         logger.error(f"Fehler bei der Analyse: {str(e)}")
         return (
