@@ -40,6 +40,7 @@ stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
 tweets_database = mongo["tweet_data"]
 elon_musk_tweets = tweets_database["elon_musk"]
+important_tweets_collection = tweets_database["elon_musk_important_tweets"]
 
 scheduler = APScheduler()
 scheduler.init_app(app)
@@ -154,6 +155,9 @@ def get_stock_data():
         logger.error(f"Error retrieving stock data: {e}")
         return jsonify({"error": "Failed to fetch stock data"}), 500
 
+@app.route("/get_important_tweets", methods=["GET", "POST"])
+def get_important_tweets():
+    return bson.json_util.dumps(important_tweets_collection.find({}).sort("Date"))
 
 @app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():

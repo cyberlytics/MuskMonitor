@@ -44,7 +44,8 @@ function ShowStock() {
     //       });
     //   });
 
-    fetch('/tweets.json')
+    // fetch('/tweets.json')
+    fetch("/get_important_tweets")
       .then(response => response.json())
       .then(data => {
         setTweets(data);
@@ -100,7 +101,7 @@ function ShowStock() {
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const tweet = tweets.find(tweet => tweet.Datum === label);
+      const tweet = tweets.find(tweet => tweet.Date.includes(label));
       return (
         <div className="custom-tooltip">
           <p className="label">{`Datum: ${label}`}</p>
@@ -109,7 +110,7 @@ function ShowStock() {
               {`${entry.name}: ${entry.value}`}
             </p>
           ))}
-          {tweet && <p className="tweet">{`Tweet: ${tweet.Tweet}`}</p>}
+          {tweet && <p className="tweet">{`Tweet: ${tweet.Text}`}</p>}
         </div>
       );
     }
@@ -119,7 +120,7 @@ function ShowStock() {
 
   const CustomDot = (props) => {
     const { cx, cy, value, payload } = props;
-    const tweet = tweets.find(tweet => tweet.Datum === payload.Datum);
+    const tweet = tweets.find(tweet => tweet.Date.includes(payload.Datum));
     if (tweet) {
       return (
         <circle cx={cx} cy={cy} r={5} fill="red" stroke="none" />

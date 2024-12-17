@@ -7,7 +7,6 @@ import time
 mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
 tweets_db = mongoClient["tweet_data"]
 tweets_collection = tweets_db["elon_musk"]
-tweets_collection.drop()
 
 def sort_tweets_by_dates(tweet):
     return datetime.datetime.strptime(tweet["Date"], "%Y-%m-%d %H:%M")
