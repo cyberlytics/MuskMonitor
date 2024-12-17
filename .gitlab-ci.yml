@@ -31,7 +31,7 @@ setup_db:
     - chmod 644 ~/.ssh/known_hosts
 
     # Clean up old files before copying new ones
-    - 'ssh -o StrictHostKeyChecking=no ubuntu@130.61.36.199 "rm -rf /opt/muskmonitor/sys-src"'
+    - 'ssh -o StrictHostKeyChecking=no ubuntu@130.61.36.199 "sudo rm -rf /opt/muskmonitor/sys-src"'
     # Copy the files to the server using scp
     - 'scp -o StrictHostKeyChecking=no -r sys-src ubuntu@130.61.36.199:/opt/muskmonitor'
     # SSH into the server and run docker compose
