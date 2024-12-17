@@ -1,62 +1,68 @@
-# %%
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
-
-# %%
-sns.set_style("darkgrid")
-plt.style.use("fivethirtyeight")
-
-# %%
-df = pd.read_json("konvertierte_datei.json")
-# %%
-df["Datum"] = pd.to_datetime(df["Datum"])
-
-# %%
-df["Year"] = df["Datum"].dt.year
-df["Month"] = df["Datum"].dt.month
-
-# %%
-dataset = df[["close", "open", "high", "low", "volume"]]
-dataset = pd.DataFrame(dataset)
-data = dataset.values
-
-# %%
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(dataset[["close"]].values)
-
-# %%
-train_size = int(len(data) * 0.75)  # 2217
-test_size = len(data) - train_size  # 739
-
-print("Train Size : ", train_size, "Test Size : ", test_size)
-
-# %%
-# Aufteilen in Trainings- und Testdaten
-train_data = scaled_data[:train_size]
-test_data = scaled_data[train_size - 60 :]
-
-# %%
-x_train = []
-y_train = []
-
-for i in range(60, len(train_data)):
-    x_train.append(train_data[i - 60 : i, 0])
-    y_train.append(train_data[i, 0])
-
-# %%
-# Convert to PyTorch tensors
-x_train = torch.tensor(x_train, dtype=torch.float32).unsqueeze(
-    -1
-)  # Shape: [batch, seq_len, 1]
-y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(-1)  # Shape: [batch, 1]
+from pymongo import MongoClient
 
 
-# %%
+#  Datenbankabfrage
+def fetch_data_from_db(start_date=None, end_date=None):
+    try:
+        mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
+        stockDB = mongoClient["stock_data"]
+        telsaCollection = stockDB["tesla"]
+
+        query = {}
+        if start_date and end_date:
+            query["Datum"] = {"$gte": start_date, "$lte": end_date}
+
+        documents = list(telsaCollection.find(query).sort("Datum", 1))
+        if not documents:
+            print("Keine Daten gefunden für den angegebenen Zeitraum.")
+            return pd.DataFrame()
+
+        # Umwandlung der abgerufenen Daten in ein DataFrame
+        df = pd.DataFrame(documents)
+        df["Datum"] = pd.to_datetime(df["Datum"])
+        df["Year"] = df["Datum"].dt.year
+        df["Month"] = df["Datum"].dt.month
+
+        return df[["Datum", "close", "open", "high", "low", "volume"]]
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Daten aus der Datenbank: {e}")
+        return pd.DataFrame()
+
+
+# Datenvorbereitung
+def prepare_data(df):
+    dataset = df[["close", "open", "high", "low", "volume"]]
+    data = dataset.values
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaled_data = scaler.fit_transform(dataset[["close"]].values)
+    # Aufteilen in Trainings- und Testdaten
+    train_size = int(len(data) * 0.75)
+    train_data = scaled_data[:train_size]
+    test_data = scaled_data[train_size - 60 :]
+
+    return train_data, test_data, scaler
+
+
+# Daten für LSTM vorbereiten
+def create_lstm_data(data, time_step=60):
+    x_data = []
+    y_data = []
+
+    for i in range(time_step, len(data)):
+        x_data.append(data[i - time_step : i, 0])
+        y_data.append(data[i, 0])
+
+    return torch.tensor(x_data, dtype=torch.float32).unsqueeze(-1), torch.tensor(
+        y_data, dtype=torch.float32
+    ).unsqueeze(-1)
+
+
+# LSTM Modelldefinition
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMModel, self).__init__()
@@ -69,87 +75,72 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         out, _ = self.lstm1(x)
         out, _ = self.lstm2(out)
-        out = out[:, -1, :]  # Use the last output of the sequence
+        out = out[:, -1, :]  # Nur den letzten Output verwenden
         out = torch.relu(self.fc1(out))
         out = torch.relu(self.fc2(out))
         out = self.fc3(out)
         return out
 
 
-# %%
-# Model hyperparameters
-input_size = 1
-hidden_size = 50
-output_size = 1
-model = LSTMModel(input_size, hidden_size, output_size)
+# Modelltraining
+def train_lstm_model(
+    x_train,
+    y_train,
+    input_size=1,
+    hidden_size=50,
+    output_size=1,
+    epochs=100,
+    batch_size=32,
+):
+    model = LSTMModel(input_size, hidden_size, output_size)
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-# Loss and optimizer
-criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    for epoch in range(epochs):
+        model.train()
+        for i in range(0, len(x_train), batch_size):
+            x_batch = x_train[i : i + batch_size]
+            y_batch = y_train[i : i + batch_size]
+            # Forward pass
+            outputs = model(x_batch)
+            loss = criterion(outputs, y_batch)
+            # Backward pass und Optimierung
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-# %%
-# Training loop
-epochs = 100
-batch_size = 32
+        if (epoch + 1) % 10 == 0:
+            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
-for epoch in range(epochs):
-    model.train()
-    for i in range(0, len(x_train), batch_size):
-        x_batch = x_train[i : i + batch_size]
-        y_batch = y_train[i : i + batch_size]
+    return model
 
-        # Forward pass
-        outputs = model(x_batch)
-        loss = criterion(outputs, y_batch)
 
-        # Backward pass and optimization
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+# %% Modellbewertung und Visualisierung
+def evaluate_and_plot(model, x_test, y_test, scaler):
+    model.eval()
+    with torch.no_grad():
+        predictions = model(x_test).numpy()
 
-    if (epoch + 1) % 10 == 0:
-        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+    # Rückskalierung der Vorhersagen
+    predictions = scaler.inverse_transform(predictions.reshape(-1, 1))
+    y_test = scaler.inverse_transform(y_test.numpy().reshape(-1, 1))
 
-# %%
-# Testdaten vorbereiten
-x_test = []
-y_test = []
-for i in range(60, len(test_data)):
-    x_test.append(test_data[i - 60 : i, 0])
-    y_test.append(test_data[i, 0])
+    rmse = np.sqrt(np.mean((y_test - predictions) ** 2))
+    print(f"RMSE: {rmse:.2f}")
 
-x_test = torch.tensor(x_test, dtype=torch.float32).unsqueeze(-1)
-y_test = torch.tensor(y_test, dtype=torch.float32).unsqueeze(-1)
-# %%
-# Testing und Vorhersagen
-model.eval()
-with torch.no_grad():
-    predictions = model(x_test).numpy()
 
-# Rückwärtsskalierung
-predictions = predictions.reshape(-1, 1)
-predictions = scaler.inverse_transform(predictions)
+# Hauptfunktion
+def main(start_date="2023-01-01", end_date="2023-12-31"):
+    df = fetch_data_from_db(start_date, end_date)
+    if df.empty:
+        print("Keine Daten zum Verarbeiten.")
+        return
+    train_data, test_data, scaler = prepare_data(df)
+    x_train, y_train = create_lstm_data(train_data)
+    x_test, y_test = create_lstm_data(test_data)
+    model = train_lstm_model(x_train, y_train)
+    evaluate_and_plot(model, x_test, y_test, scaler)
 
-y_test = y_test.numpy().reshape(-1, 1)
-y_test = scaler.inverse_transform(y_test)
 
-# Berechnung des RMSE
-rmse = np.sqrt(np.mean((y_test - predictions) ** 2))
-print(f"RMSE: {rmse:.2f}")
-# %%
-# Visualization
-train = dataset.iloc[:train_size]
-test = dataset.iloc[train_size:]
-test["Predictions"] = predictions
-
-plt.figure(figsize=(15, 6))
-plt.title("TESLA Close Stock Price Prediction", fontsize=18)
-plt.xlabel("Date", fontsize=18)
-plt.ylabel("Close Price", fontsize=18)
-plt.plot(train["close"], linewidth=3)
-plt.plot(test["close"], linewidth=3)
-plt.plot(test["Predictions"], linewidth=3)
-plt.legend(["Train", "Test", "Predictions"])
-plt.show()
-
-# %%
+if __name__ == "__main__":
+    main()
