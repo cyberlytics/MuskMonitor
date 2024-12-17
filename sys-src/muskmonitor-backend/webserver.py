@@ -35,9 +35,11 @@ logger.addHandler(ch)
 
 app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
 app.config.from_object(FlaskAPSchedulerConfig)
-mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
+# mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
+mongo = MongoClient("mongodb://stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
+
 tweets_database = mongo["tweet_data"]
 elon_musk_tweets = tweets_database["elon_musk"]
 important_tweets_collection = tweets_database["elon_musk_important_tweets"]
