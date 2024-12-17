@@ -32,6 +32,8 @@ services:
     depends_on:
      - stock-database
      - vector-database
+    # volumes:
+    # - "./muskmonitor-backend/webserver.py:/app/webserver.py"
 
   react-frontend:
     build: ./muskmonitor-frontend

@@ -12,11 +12,11 @@ export default function TimeSeriesDisplay() {
     fetch("/analyze_sentiments")
       .then((response) => response.json())
       .then((data) => {
-        const dataArray = Object.keys(data).map((key) => ({
-          text: key,
-          class: data[key],
-        }));
-        setData(dataArray);
+        // const dataArray = Object.keys(data).map((key) => ({
+        //   text: key,
+        //   class: data[key],
+        // }));
+        setData(data);
       })
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
@@ -26,7 +26,7 @@ export default function TimeSeriesDisplay() {
       {data.map((item, index) => {
         let backgroundColor;
         console.log(item);
-        switch (item.class.class) {
+        switch (item.Class) {
           case "Positive":
             backgroundColor = "green";
             break;
@@ -46,7 +46,7 @@ export default function TimeSeriesDisplay() {
             className="vertical-timeline-element--work"
             contentStyle={{ background: backgroundColor, color: "#000" }}
             contentArrowStyle={{ borderRight: `7px solid ${backgroundColor}` }}
-            date={item.class.date}
+            date={item.Date}
             iconStyle={{ background: "rgb(33, 150, 243)", color: "#000" }}
             icon={
               <img
@@ -57,9 +57,9 @@ export default function TimeSeriesDisplay() {
             }
           >
             <h3 className="vertical-timeline-element-title">
-              {item.class.title}
+              {/* {item.class.Title} */ "Elon Musk schreibt auf X"}
             </h3>
-            <p>{item.class.description}</p>
+            <p>{item.Text}</p>
           </VerticalTimelineElement>
         );
       })}
