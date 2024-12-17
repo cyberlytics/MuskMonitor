@@ -4,7 +4,8 @@ import datetime
 import yfinance
 import requests
 
-mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
+# mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
+mongoClient = MongoClient("mongodb://stock-database:27017/")
 stockDB = mongoClient["stock_data"]
 telsaCollection = stockDB["tesla"]
 
