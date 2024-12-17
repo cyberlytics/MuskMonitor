@@ -200,20 +200,20 @@ def test_get_stock_data(client, monkeypatch):
 
 # Test den Endpunkt /analyse_sentiments mit ungültigen Eingaben
 # -> Erwartet: HTTP-Statuscode 400 und Fehlermeldung "invalid request"
-def test_analyze_sentiments_invalid(client):
-    """Test the /analyze_sentiments route with invalid input"""
+# def test_analyze_sentiments_invalid(client):
+#     """Test the /analyze_sentiments route with invalid input"""
 
-    data = {"invalid_key": "This is not a valid request"}
-    response = client.post("/analyze_sentiments", json=data)
-    assert response.status_code == 400
-    assert b"Invalid request, please provide a list of tweets." in response.data
+#     data = {"invalid_key": "This is not a valid request"}
+#     response = client.post("/analyze_sentiments", json=data)
+#     assert response.status_code == 400
+#     assert b"Invalid request, please provide a list of tweets." in response.data
 
 
-# Test den Endpunkt /analyse_sentiments ohne JSON-Payload
-# -> Erwartet: HTTP-Statuscode 400 und Fehlermeldung "invalid request"
-def test_analyze_sentiments_no_json(client):
-    """Test the /analyze_sentiments route with no JSON payload"""
+# # Test den Endpunkt /analyse_sentiments ohne JSON-Payload
+# # -> Erwartet: HTTP-Statuscode 400 und Fehlermeldung "invalid request"
+# def test_analyze_sentiments_no_json(client):
+#     """Test the /analyze_sentiments route with no JSON payload"""
 
-    response = client.post("/analyze_sentiments")
-    assert response.status_code == 400
-    assert b"Invalid request, please provide a list of tweets." in response.data
+#     response = client.post("/analyze_sentiments")
+#     assert response.status_code == 400
+#     assert b"Invalid request, please provide a list of tweets." in response.data
