@@ -13,8 +13,6 @@ setup_db:
   image: docker:latest
   services:
     - docker:27.0-dind
-  before_script:
-    - docker info
   script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
     - eval $(ssh-agent -s)
