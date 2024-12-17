@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, current_app
 from flask_pymongo import PyMongo
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING, ASCENDING
 import bson.json_util
 import logging
 from sentiment_analyse import analyse_and_return_json
@@ -140,21 +140,20 @@ def analyse_sentiments():
     Erwartet ein JSON mit einer Liste von Texten.
     """
     try:
-        data = request.get_json()  # Empfang der JSON-Daten im POST-Request
-        tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
+        # data = request.get_json()  # Empfang der JSON-Daten im POST-Request
+        # tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         # Führe die Sentiment-Analyse durch
         #result = analyse_and_return_json(tweets)
-        result = None
-
-        tweets_from_db = elon_musk_tweets.find({})
+        tweets_from_db = list(elon_musk_tweets.find({}).sort("Datum", ASCENDING))[-100:]
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
-        result = analyse_and_return_json(tweets_text)
+        sentiment_results = analyse_and_return_json(tweets_text)
 
-        for sentiment_result, tweet in zip(result, tweets_from_db):
+        for sentiment_result, tweet in zip(sentiment_results, tweets_from_db):
             tweet["Class"] = sentiment_result["sentiment"]
-
-        return jsonify(bson.json_util.dumps(tweets_from_db))
+            del tweet["_id"]
+            
+        return jsonify(tweets_from_db)
         # Sende das Ergebnis zurück als JSON-Antwort
         #return jsonify(result)
     except Exception as e:
