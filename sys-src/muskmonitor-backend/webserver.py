@@ -151,6 +151,7 @@ def analyse_sentiments():
 
         for sentiment_result, tweet in zip(sentiment_results, tweets_from_db):
             tweet["Class"] = sentiment_result["sentiment"]
+            tweet["Title"] = "Elon Musk schreibt auf X"
             del tweet["_id"]
             
         return jsonify(tweets_from_db)

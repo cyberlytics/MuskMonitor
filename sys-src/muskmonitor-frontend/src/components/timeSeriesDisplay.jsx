@@ -57,7 +57,7 @@ export default function TimeSeriesDisplay() {
             }
           >
             <h3 className="vertical-timeline-element-title">
-              {/* {item.class.Title} */ "Elon Musk schreibt auf X"}
+              {item.Title}
             </h3>
             <p>{item.Text}</p>
           </VerticalTimelineElement>

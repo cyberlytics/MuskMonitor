@@ -12,26 +12,30 @@ global.IntersectionObserver = class {
 global.fetch = vi.fn(() =>
   Promise.resolve({
     json: () =>
-      Promise.resolve({
-        "Tweet 1": {
-          class: "Positive",
-          date: "2024-01-01",
-          title: "Great News",
-          description: "Tesla stock surges.",
+      // Promise.resolve([{Class: "Positive"}, {Class: "Neutral"}])
+      Promise.resolve([
+        // "Tweet 1": {
+        {
+          Class: "Positive",
+          Date: "2024-01-01",
+          Title: "Great News",
+          Text: "Tesla stock surges.",
         },
-        "Tweet 2": {
-          class: "Neutral",
-          date: "2024-01-02",
-          title: "Market Update",
-          description: "No major changes.",
+        // "Tweet 2": {
+        {
+          Class: "Neutral",
+          Date: "2024-01-02",
+          Title: "Market Update",
+          Text: "No major changes.",
         },
-        "Tweet 3": {
-          class: "Negative",
-          date: "2024-01-03",
-          title: "Bad News",
-          description: "Stock drops slightly.",
+        // "Tweet 3": {
+        {
+          Class: "Negative",
+          Date: "2024-01-03",
+          Title: "Bad News",
+          Text: "Stock drops slightly.",
         },
-      }),
+      ]),
   })
 );
 
