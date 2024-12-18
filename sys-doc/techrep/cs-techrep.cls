@@ -1,4 +1,4 @@
-%# Copyright (c) 2023 Christoph P. Neumann,  
+%# Copyright (c) 2023-2024 Christoph P. Neumann,
 %# Copyright (c) 2018-2021 Oliver Kopp
 %# Reference: https://latextemplates.github.io/
 
@@ -8,18 +8,30 @@
 % !TeX program = pdflatex
 % !BIB program = biblatex / biber
 
-% Declare that this document class file requires at least LaTeX version 2e.
 \NeedsTeXFormat{LaTeX2e}
 
-% Provide the name of your document class, the date it was last updated, and a comment about what it's used for
-\ProvidesClass{cs-techrep}[2024/05/04 Technical Reports in Computer Science and Software Engineering v0.3]
+\ProvidesClass{cs-techrep}[2024/10/24 Technical Reports in Computer Science and Software Engineering v0.5]
 
 % Define marker counter for options (counter are global in latex):
+
+\newcounter{cstechrep@subfigtracker}
+\newcounter{cstechrep@subcaptiontracker}
 \newcounter{cstechrep@pbalancetracker}
 \newcounter{cstechrep@flushendtracker}
 
 % Declare options:
-\DeclareOption{onecolumn}{\OptionNotUsed} % IEEE option onecolumn will be ignored
+
+\DeclareOption{subfig}{
+  \setcounter{cstechrep@subfigtracker}{1}
+  \typeout{cs-techrep class: subfig option is set (use subfloat command).}
+}
+\DeclareOption{subcaption}{
+  \setcounter{cstechrep@subcaptiontracker}{1}
+  \typeout{cs-techrep class: subcaption option is set (use subfigure command).}
+}
+
+% IEEE option onecolumn will be ignored
+\DeclareOption{onecolumn}{\OptionNotUsed}
 
 \DeclareOption{pbalance}{
   \setcounter{cstechrep@pbalancetracker}{1}
@@ -31,15 +43,16 @@
 }
 
 % We'll pass any document class options along to the underlying class
+% (recommended IEEE options: conference,a4paper)
 \DeclareOption*{%
-  \PassOptionsToClass{\CurrentOption}{IEEEtran}% recommended IEEE options: conference,a4paper
+  \PassOptionsToClass{\CurrentOption}{IEEEtran}
 }
 
 % Now we'll execute any options passed in
 \ProcessOptions\relax
 
-% Instead of defining each and every little detail required to create a new document class,
-% you can base your class on an existing document class.
+% Instead of defining each and every little detail required to create a new
+% document class, you can base your class on an existing document class.
 \LoadClass{IEEEtran}
 
 % This template has been tested with IEEEtran of 2015.
@@ -48,21 +61,22 @@
 % USER PROVIDED VARIABLES
 
 \makeatletter
-\newcommand*\DefcstechrepVar[1]{\@namedef{cstechrep#1}##1{\global\@namedef{cstechrep#1}{##1}}}
+\newcommand*\DefcstechrepVar[1]{%
+\@namedef{cstechrep#1}##1{\global\@namedef{cstechrep#1}{##1}}}
 \makeatother
 
 \DefcstechrepVar{AuthorListTex}
 \DefcstechrepVar{AuthorListBib} % Use *and* as author separator!
 \DefcstechrepVar{TitleTex}
 \DefcstechrepVar{TitleBib}
-\DefcstechrepVar{Department}  % e.g., Department of Electrical Engineering, Media and Computer Science
-\DefcstechrepVar{Institution} % e.g., Ostbayerische Technische Hochschule Amberg-Weiden
+\DefcstechrepVar{Department}  % e.g., Department of Computer Science
+\DefcstechrepVar{Institution} % e.g., OTH Amberg-Weiden
 \DefcstechrepVar{Address}     % e.g., Amberg, Germany
-\DefcstechrepVar{Type}      % e.g., Technical Report
-\DefcstechrepVar{Year}        % e.g., 2023
+\DefcstechrepVar{Type}        % e.g., Technical Report
+\DefcstechrepVar{Year}        % e.g., 2024
 \DefcstechrepVar{Title}
-\DefcstechrepVar{Month}       % e.g., 6 (for June)
-\DefcstechrepVar{Number}      % e.g., CL-2023-42
+\DefcstechrepVar{Month}       % e.g., 10 (for October)
+\DefcstechrepVar{Number}      % e.g., CL-2024-42
 \DefcstechrepVar{Lang}        % e.g., english = en-US (or: ngerman = DE)
 % =======================
 
@@ -75,18 +89,30 @@
 
 % Set English as language and allow to write hyphenated"=words
 %
-% Even though `american`, `english` and `usenglish` are synonyms for babel package (according to https://tex.stackexchange.com/questions/12775/babel-english-american-usenglish), the llncs document class is prepared to avoid the overriding of certain names (such as "Abstract." -> "Abstract" or "Fig." -> "Figure") when using `english`, but not when using the other 2.
+% Even though `american`, `english` and `usenglish` are synonyms
+% for babel package (according to 
+% https://tex.stackexchange.com/questions/12775/babel-english-american-usenglish),
+% the llncs document class is prepared to avoid the overriding of certain 
+% names (such as "Abstract." -> "Abstract" or "Fig." -> "Figure")
+% when using `english`, but not when using the other 2.
 % english has to go last to set it as default language
 \RequirePackage[ngerman,main=english]{babel}
 %
 % Hint by http://tex.stackexchange.com/a/321066/9075 -> enable "= as dashes
 \addto\extrasenglish{\languageshorthands{ngerman}\useshorthands{"}}
 
-\RequirePackage{lmodern} % CM variant with scalable font (to prevent "pdfTeX error (font expansion): auto expansion is only possible with scalable")
-\RequirePackage{times} % Times New Roman, because IEEE is based on Times (and not CM/lmodern), however, package times is not a scalable font, thus, lmodern is required additionally and must be loaded before times
+% CM variant with scalable font
+% (to prevent "pdfTeX error (font expansion):
+% auto expansion is only possible with scalable")
+\RequirePackage{lmodern}
+% Times New Roman, because IEEE is based on Times (and not CM/lmodern),
+% however, package times is not a scalable font, thus, lmodern is required
+% additionally and must be loaded before times.
+\RequirePackage{times}
 
 % Links behave as they should. Enables "\url{...}" for URL typesettings.
-% Allow URL breaks also at a hyphen, even though it might be confusing: Is the "-" part of the address or just a hyphen?
+% Allow URL breaks also at a hyphen, even though it might be confusing:
+% Is the "-" part of the address or just a hyphen?
 % See https://tex.stackexchange.com/a/3034/9075.
 \RequirePackage[hyphens]{url}
 
@@ -112,35 +138,37 @@
 % inputenc must be loaded before biblatex
 \RequirePackage[utf8]{inputenc}
 
-% Has to be loaded AFTER any font packages. See https://tex.stackexchange.com/a/2869/9075.
+% Has to be loaded AFTER any font packages.
+% See https://tex.stackexchange.com/a/2869/9075.
 \RequirePackage[T1]{fontenc}
 
 
-% Character protrusion and font expansion. See http://www.ctan.org/tex-archive/macros/latex/contrib/microtype/
+% Character protrusion and font expansion.
+% See http://www.ctan.org/tex-archive/macros/latex/contrib/microtype/
 \RequirePackage[
-  babel=true, % Enable language-specific kerning. Take language-settings from the languge of the current document (see Section 6 of microtype.pdf)
+  babel=true, % Enable language-specific kerning
   expansion=alltext,
-  protrusion=alltext-nott, % Ensure that at listings, there is no change at the margin of the listing
+  protrusion=alltext-nott, % Ensure no changes at the edge of the listing.
   nopatch=eqnum, % fix unable to apply patch eqnum
-  final % Always enable microtype, even if in draft mode. This helps finding bad boxes quickly.
-        % In the standard configuration, this template is always in the final mode, so this option only makes a difference if "pros" use the draft mode
+  final % Always enable microtype, even if in draft mode.
+        % This helps finding bad boxes quickly. In the
+        % standard configuration, this template is always in the final mode,
+        % so this option only makes a difference if "pros" use the draft mode.
 ]{microtype}
 
-% \texttt{test -- test} keeps the "--" as "--" (and does not convert it to an en dash)
+% \texttt{test -- test} keeps the "--" as "--" 
+% (and does not convert it to an en dash)
 \DisableLigatures{encoding = T1, family = tt* }
-
-%\DeclareMicrotypeSet*[tracking]{my}{ font = */*/*/sc/* }%
-%\SetTracking{ encoding = *, shape = sc }{ 45 }
-% Source: http://homepage.ruhr-uni-bochum.de/Georg.Verweyen/pakete.html
-% Deactiviated, because does not look good
 
 \RequirePackage{graphicx}
 
 % Creative Commons
 \RequirePackage{ccicons}
 
-% Diagonal lines in a table - http://tex.stackexchange.com/questions/17745/diagonal-lines-in-table-cell
-% Slashbox is not available in texlive (due to licensing) and also gives bad results. Thus, we use diagbox
+% Diagonal lines in a table
+% http://tex.stackexchange.com/questions/17745/diagonal-lines-in-table-cell
+% Slashbox is not available in texlive (due to licensing)
+% and also gives bad results. Thus, we use diagbox
 \RequirePackage{diagbox}
 
 \RequirePackage[cmyk, table]{xcolor}
@@ -158,31 +186,31 @@
 % Source: https://tex.stackexchange.com/a/433961/9075
 
 \lstdefinelanguage{json}{
-    basicstyle=\normalfont\ttfamily,
-    commentstyle=\color{eclipseStrings}, % style of comment
-    stringstyle=\color{eclipseKeywords}, % style of strings
-    numbers=left,
-    numberstyle=\scriptsize,
-    stepnumber=1,
-    numbersep=8pt,
-    showstringspaces=false,
-    breaklines=true,
-    frame=lines,
-    % backgroundcolor=\color{gray}, %only if you like
-    string=[s]{"}{"},
-    comment=[l]{:\ "},
-    morecomment=[l]{:"},
-    literate=
-        *{0}{{{\color{numb}0}}}{1}
-         {1}{{{\color{numb}1}}}{1}
-         {2}{{{\color{numb}2}}}{1}
-         {3}{{{\color{numb}3}}}{1}
-         {4}{{{\color{numb}4}}}{1}
-         {5}{{{\color{numb}5}}}{1}
-         {6}{{{\color{numb}6}}}{1}
-         {7}{{{\color{numb}7}}}{1}
-         {8}{{{\color{numb}8}}}{1}
-         {9}{{{\color{numb}9}}}{1}
+  basicstyle=\normalfont\ttfamily,
+  commentstyle=\color{eclipseStrings}, % style of comment
+  stringstyle=\color{eclipseKeywords}, % style of strings
+  numbers=left,
+  numberstyle=\scriptsize,
+  stepnumber=1,
+  numbersep=8pt,
+  showstringspaces=false,
+  breaklines=true,
+  frame=lines,
+  % backgroundcolor=\color{gray}, %only if you like
+  string=[s]{"}{"},
+  comment=[l]{:\ "},
+  morecomment=[l]{:"},
+  literate=
+      *{0}{{{\color{numb}0}}}{1}
+       {1}{{{\color{numb}1}}}{1}
+       {2}{{{\color{numb}2}}}{1}
+       {3}{{{\color{numb}3}}}{1}
+       {4}{{{\color{numb}4}}}{1}
+       {5}{{{\color{numb}5}}}{1}
+       {6}{{{\color{numb}6}}}{1}
+       {7}{{{\color{numb}7}}}{1}
+       {8}{{{\color{numb}8}}}{1}
+       {9}{{{\color{numb}9}}}{1}
 }
 
 \lstset{
@@ -287,7 +315,8 @@
 \let\blx@rerun@biber\relax
 \makeatother
 
-\addbibresource{selfref.bib} % selfref.bib needs to be generated, containing a bibentry with key selfref
+% selfref.bib needs to be generated, containing a bibentry with key selfref
+\addbibresource{selfref.bib}
 \DeclareBibliographyCategory{selfref}
 \addtocategory{selfref}{selfref}
 % How to use: \printbibliography[notcategory=selfref]
@@ -307,7 +336,6 @@
   {\usebibmacro{prenote}}
   {%
     \let\oldabx@bibmonth\abx@bibmonth%
-    %\let\abx@bibmonth\blx@imc@biblstring\typeout{CHG: abx@bibmonth \meaning\abx@bibmonth}% false: not abbreviated; but nowork
     \setkeys{blx@opt@pre}{dateabbrev=false}% nowork
     \mkbibmonth{\thefield{month}}%
     \let\abx@bibmonth\oldabx@bibmonth% restore
@@ -319,8 +347,13 @@
 % Enable nice comments
 \RequirePackage{pdfcomment}
 
-\newcommand{\commentontext}[2]{\colorbox{yellow!60}{#1}\pdfcomment[color={0.234 0.867 0.211},hoffset=-6pt,voffset=10pt,opacity=0.5]{#2}}
-\newcommand{\commentatside}[1]{\pdfcomment[color={0.045 0.278 0.643},icon=Note]{#1}}
+\newcommand{\commentontext}[2]{%
+\colorbox{yellow!60}{#1}%
+\pdfcomment[color={0.234 0.867 0.211},%
+hoffset=-6pt,voffset=10pt,opacity=0.5]{#2}}
+
+\newcommand{\commentatside}[1]{%
+\pdfcomment[color={0.045 0.278 0.643},icon=Note]{#1}}
 
 % Compatibality with packages todo, easy-todo, todonotes
 \newcommand{\todo}[1]{\commentatside{#1}}
@@ -336,7 +369,9 @@
 \RequirePackage[group-minimum-digits=4,per-mode=fraction]{siunitx}
 \addto\extrasgerman{\sisetup{locale = DE}}
 
-% Enable that parameters of \cref{}, \ref{}, \cite{}, ... are linked so that a reader can click on the number an jump to the target in the document
+% Enable that parameters of \cref{}, \ref{}, \cite{}, ...
+% are linked so that a reader can click on the number
+% and jump to the target in the document
 \RequirePackage{hyperref}
 
 % Enable hyperref without colors and without bookmarks
@@ -354,10 +389,12 @@
 \RequirePackage{orcidlink}
 
 % For easy quotations: \enquote{text}
-% This package is very smart when nesting is applied, otherwise textcmds (see below) provides a shorter command
+% This package is very smart when nesting is applied,
+% otherwise textcmds (see below) provides a shorter command
 \RequirePackage[autostyle=true]{csquotes}
 
-% Enable using "`quote"' - see https://tex.stackexchange.com/a/150954/9075
+% Enable using "`quote"'
+% See: https://tex.stackexchange.com/a/150954/9075
 \defineshorthand{"`}{\openautoquote}
 \defineshorthand{"'}{\closeautoquote}
 
@@ -365,7 +402,8 @@
 \usepackage{amsmath,amssymb,amsfonts}
 
 % Extensions for references inside the document (\cref{fig:sample}, ...)
-% Enable usage \cref{...} and \Cref{...} instead of \ref: Type of reference included in the link
+% Enable usage \cref{...} and \Cref{...} instead of \ref:
+% Type of reference included in the link.
 % That means, "Figure 5" is a full link instead of just "5".
 \RequirePackage[capitalise,nameinlink,noabbrev]{cleveref}
 
@@ -379,7 +417,8 @@
 \RequirePackage{tcolorbox}
 \tcbuselibrary{listings}
 
-%introduce \powerset - hint by http://matheplanet.com/matheplanet/nuke/html/viewtopic.php?topic=136492&post_id=997377
+%introduce \powerset
+% See: http://matheplanet.com/matheplanet/nuke/html/viewtopic.php?topic=136492&post_id=997377
 \DeclareFontFamily{U}{MnSymbolC}{}
 \DeclareSymbolFont{MnSyC}{U}{MnSymbolC}{m}{n}
 \DeclareFontShape{U}{MnSymbolC}{m}{n}{
@@ -403,23 +442,12 @@
 % Example: applicaiton\hydash specific
 \makeatletter
 \newcommand{\hydash}{\penalty\@M-\hskip\z@skip}
-% Definition of "= taken from http://mirror.ctan.org/macros/latex/contrib/babel-contrib/german/ngermanb.dtx
+% Definition of "=
+% See: http://mirror.ctan.org/macros/latex/contrib/babel-contrib/german/ngermanb.dtx
 \makeatother
-
-% Add manual adapted hyphenation of English words
-% See https://ctan.org/pkg/hyphenex and https://tex.stackexchange.com/a/22892/9075 for details
-% Does not work on MiKTeX, therefore disabled - issue reported at https://github.com/MiKTeX/miktex-packaging/issues/271
-% \input{ushyphex}
 
 % Enable copy and paste of text from the PDF
 % Only required for pdflatex. It "just works" in the case of lualatex.
-% Alternative: cmap or mmap package
-% mmap enables mathematical symbols, but does not work with the newtx font set
-% See: https://tex.stackexchange.com/a/64457/9075
-% Other solutions outlined at http://goemonx.blogspot.de/2012/01/pdflatex-ligaturen-und-copynpaste.html and http://tex.stackexchange.com/questions/4397/make-ligatures-in-linux-libertine-copyable-and-searchable
-% Trouble shooting outlined at https://tex.stackexchange.com/a/100618/9075
-%
-% According to https://tex.stackexchange.com/q/451235/9075 this is the way to go
 \input glyphtounicode
 \pdfgentounicode=1
 
@@ -427,15 +455,12 @@
 \RequirePackage{pdflscape}
 \RequirePackage{afterpage}
 
-% Allows to hyphenate a word that contains a dash:
-% https://stackoverflow.com/questions/2193307/how-do-i-get-latex-to-hyphenate-a-word-that-contains-a-dash
-\RequirePackage[shortcuts]{extdash} % Use \-/ for a breakable dash that does not prevent the remainer of the word to be hyphenated
-
 % requires, e.g., \PassOptionsToPackage{
 % type=CC,modifier=by,version=4.0}{doclicense} before \documentclass
 \RequirePackage[hyperxmp=false,lang=English]{doclicense}
 
-% Improve wrapping of URLs - hint by http://tex.stackexchange.com/a/10419/9075
+% Improve wrapping of URLs
+% See: http://tex.stackexchange.com/a/10419/9075
 \makeatletter
 \def\ps@IEEEtitlepagestyle{
   \def\@oddfoot{\mycopyrightnotice}
@@ -445,10 +470,10 @@
   {\footnotesize
     \begin{minipage}{0.8\textwidth}
   \centering
-    % Creative Commons / Open Access:
-    %\href{https://creativecommons.org/licenses/by/4.0/}{\ccby{} This work is %licensed under a Creative Commons Attribution 4.0 International (CC BY 4.0) %License.}
     % License based on doclicense package:
-    \href{\doclicenseURL}{\doclicenseIcon{} This work is licensed under a \doclicenseLongNameRef{} (\doclicenseNameRef{}) license.}
+    \href{\doclicenseURL}{\doclicenseIcon{}
+    This work is licensed under a \doclicenseLongNameRef{}
+    (\doclicenseNameRef{}) license.}
     % Citation advice:
     \\Please cite as: \fullcite{selfref}.
   \end{minipage}
@@ -480,7 +505,19 @@
 \cstechrepAddress
 }}
 
-\IEEEspecialpapernotice{\cstechrepType: \cstechrepNumber, \citemonth{selfref} \cstechrepYear}
+\IEEEspecialpapernotice{\cstechrepType: \cstechrepNumber, 
+\citemonth{selfref} \cstechrepYear}
+
+% subfigure captions with parentheses and footnotesize:
+\ifnum\value{cstechrep@subfigtracker}=1
+  \typeout{cs-techrep class: load subfig package (use subfloat command).}
+  \RequirePackage[caption=false,font=footnotesize]{subfig}
+\fi
+\ifnum\value{cstechrep@subcaptiontracker}=1
+  \typeout{cs-techrep class: load subcaption package (use subfigure command).}
+  \RequirePackage{subcaption}
+  \captionsetup[subfigure]{labelformat=parens,font=footnotesize}
+\fi
 
 % Balance/level columns at the last page / in bibliography
 % DISCLAIMER: No solution is a 100%/perfect one!
@@ -490,11 +527,23 @@
   \typeout{cs-techrep class: load pbalance package.}
   \RequirePackage{pbalance}
 \fi
-% Flushend => works with arxiv, but major incampatibility with lineno (and, thus, also with mindflow et al.)
+% Flushend => works with arxiv, but major incampatibility with lineno
+% (and, thus, also with mindflow et al.)
 \ifnum\value{cstechrep@flushendtracker}=1
   \typeout{cs-techrep class: load flushend package.}
   \RequirePackage{flushend}
 \fi
 
-% Finally, we'll use \endinput to indicate that LaTeX can stop reading this file. LaTeX will ignore anything after this line.
+% ========================================================
+% Packages that need to be loaded last:
+
+% Allows to hyphenate a word that contains a dash:
+% https://stackoverflow.com/questions/2193307/how-do-i-get-latex-to-hyphenate-a-word-that-contains-a-dash
+% Use \-/ for a breakable dash that does not prevent the remainer
+% of the word to be hyphenated.
+\RequirePackage[shortcuts]{extdash} 
+% ========================================================
+
+% Finally, we'll use \endinput to indicate that LaTeX can stop reading
+% this file. LaTeX will ignore anything after this line.
 \endinput
