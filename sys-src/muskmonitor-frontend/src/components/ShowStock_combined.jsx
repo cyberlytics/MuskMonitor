@@ -13,7 +13,7 @@ function ShowStock() {
 
   useEffect(() => {
     // Fetch stock data
-    fetch("http://127.0.0.1:5000/get_stock_data", {   
+    fetch("/get_stock_data", {   
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
     })
@@ -26,7 +26,7 @@ function ShowStock() {
     });
   
     // Fetch tweets
-    fetch("http://127.0.0.1:5000/get_important_tweets")
+    fetch("/get_important_tweets")
       .then(response => response.json())
       .then(tweet_data => {
         setTweets(tweet_data);
@@ -36,7 +36,7 @@ function ShowStock() {
       });
   
     // Fetch prediction results
-    fetch("http://127.0.0.1:5000/get_prediction_results")
+    fetch("/get_prediction_results")
       .then(response => response.json())
       .then(pred_data => {
         setPredictions(pred_data);
