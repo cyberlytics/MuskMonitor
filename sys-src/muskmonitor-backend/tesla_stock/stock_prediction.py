@@ -123,19 +123,38 @@ def train_lstm_model(
 
 
 # %% Modellbewertung und Visualisierung
-def evaluate_and_plot(model, x_test, y_test, scaler):
+def evaluate_and_forecast(model, x_test, y_test, scaler, test_dates, future_steps=10):
     model.eval()
     with torch.no_grad():
+        # Generate predictions for the test set
         predictions = model(x_test).numpy()
 
-    # Rückskalierung der Vorhersagen
+    # Reverse scaling for test set predictions
     predictions = scaler.inverse_transform(predictions.reshape(-1, 1))
     y_test = scaler.inverse_transform(y_test.numpy().reshape(-1, 1))
 
+    # Prepare future dates
+    last_test_date = test_dates.iloc[-1]  # Extract the last date
+    future_dates = [last_test_date + pd.Timedelta(days=i + 1) for i in range(future_steps)]
+
+    # Initialize future input with the last available test data
+    future_input = x_test[-1].numpy().reshape(1, -1, 1)  # Reshape to match LSTM input
+    future_predictions = []
+
+    for _ in range(future_steps):
+        with torch.no_grad():
+            future_pred = model(torch.tensor(future_input, dtype=torch.float32))
+        future_pred_scaled = future_pred.numpy().reshape(-1, 1)  # Flatten prediction for inverse scaling
+        future_pred = scaler.inverse_transform(future_pred_scaled)  # Reverse scale
+        future_predictions.append(future_pred.item())
+
+        # Update future input with the new prediction
+        future_input = np.append(future_input[:, 1:, :], future_pred_scaled.reshape(1, 1, -1), axis=1)
+
     rmse = np.sqrt(np.mean((y_test - predictions) ** 2)).item()  # Convert RMSE to Python float
 
+    # Combine dates with predictions
+    predicted_values_with_dates = list(zip(test_dates.tolist(), predictions.flatten().tolist()))
+    future_values_with_dates = list(zip(future_dates, future_predictions))
 
-    predicted_values = predictions.flatten().tolist()
-    actual_values = y_test.flatten().tolist()
-    return predicted_values, actual_values, rmse
-
+    return predicted_values_with_dates, y_test.flatten().tolist(), rmse, future_values_with_dates
