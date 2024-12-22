@@ -1,12 +1,4 @@
 services:
-  # stock-database:
-  #   image: mongo
-  #   restart: always
-  #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: root
-  #     MONGO_INITDB_ROOT_PASSWORD: root_password
-  #   volumes:
-  #   - "MongoDB_Data:/data/db"
   # Router for replica set.
   stock-database:
     image: mongo
@@ -92,66 +84,6 @@ services:
       - Mongo_DB_Shard_02_C_DB:/data/db
       - Mongo_DB_Shard_02_C_Config:/data/configdb
     restart: always
-
-  vector-database:
-    image: cr.weaviate.io/semitechnologies/weaviate
-    command: "--host 0.0.0.0 --port '8080' --scheme http"
-    # ports:
-    # - "3579:8080" # HTTP
-    # - "50051:50051" # gRPC
-    environment:
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
-      PERSISTENCE_DATA_PATH: "/var/lib/weaviate_data"
-      DEFAULT_VECTORIZER_MODULE: "none"
-      CLUSTER_HOSTNAME: "node1"
-      LIMIT_RESOURCES: "true"
-    volumes:
-    - "Weaviate_Data:/var/lib/weaviate_data"
-
-  flask-backend:
-    build: ./muskmonitor-backend
-    container_name: flask-backend
-    volumes: 
-     - ./muskmonitor-backend:/app
-    ports:
-     - "5000:5000"
-    depends_on:
-     - stock-database
-     - vector-database
-    environment:
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
-
-  react-frontend:
-    build: ./muskmonitor-frontend
-    container_name: react-frontend
-    ports:
-      - "3001:80"  # Mapping external port 3001 to internal port 80
-
-  nginx:
-    build: ./nginx
-    container_name: nginx
-    ports:
-      - "8080:80"
-    depends_on:
-      - flask-backend
-      - react-frontend
-
-  # flask-tests:
-  #   build: ./muskmonitor-backend
-  #   command: pytest --maxfail=1 --disable-warnings
-  #   depends_on:
-  #     - stock-database
-  #     - vector-database
-  #   volumes:
-  #   - "./muskmonitor-backend/test_app.py:/app/test_app.py"
-
-  # react-tests:
-  #   build:
-  #     context: ./muskmonitor-frontend
-  #     target: build
-  #   command: npm run test -- --run
 
 volumes:
   Weaviate_Data:
