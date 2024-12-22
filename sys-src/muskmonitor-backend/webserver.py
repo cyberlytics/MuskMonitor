@@ -10,6 +10,8 @@ import re
 import time
 import datetime
 from tesla_stock.stock_prediction import *
+from threading import Thread
+from flask_cors import CORS
 
 from sentiment_analyse import analyse_and_return_json
 from x_scraper.nitter_scraper import (
@@ -34,6 +36,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
+CORS(app)
 app.config.from_object(FlaskAPSchedulerConfig)
 # mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
 mongo = MongoClient("mongodb://stock-database:27017/")
@@ -193,7 +196,7 @@ def analyse_sentiments():
         )
 
 
-@app.route("/start-scraper")
+@app.route("/start_scraper")
 def start_scraper():
     with app.app_context():
         """Manually trigger the scraper."""
@@ -207,29 +210,89 @@ def start_scraper():
 
 
 # Status des Scrapers abrufen
-@app.route("/scraper-status")
+@app.route("/scraper_status")
 def scraper_status_endpoint():
     with app.app_context():
         """Check the status of the scraper."""
         return jsonify(current_app.scraper_status)
     
-@app.route("/stock-prediction")
-def stock_prediction():
-    datafromdb = fetch_data_from_db()
-    train_data, test_data, scaler = prepare_data(datafromdb)
-    x_train, y_train = create_lstm_data(train_data)
-    x_test, y_test = create_lstm_data(test_data)
-    model = train_lstm_model(x_train, y_train)
-    predicted_values, actual_values, rmse = evaluate_and_plot(model, x_test, y_test, scaler)
+# Global variable to store results
+results_file = "prediction_results.json"
+lock = False  # Prevent multiple simultaneous predictions
 
-    # Combine the results into a response
-    response = {
-        "predicted_values": predicted_values,
-        "actual_values": actual_values,
-        "rmse": rmse
-    }
+# Function to perform stock prediction
+import json  # Ensure you import the json module if you haven't
 
-    return jsonify(response)
+# Function to perform stock prediction
+def perform_stock_prediction():
+    global lock
+    lock = True
+    try:
+        # Fetch data from the database
+        datafromdb = fetch_data_from_db()
+        train_data, test_data, scaler = prepare_data(datafromdb)
+        x_train, y_train = create_lstm_data(train_data)
+        x_test, y_test = create_lstm_data(test_data)
+
+        # Extract test dates
+        test_dates = datafromdb["Datum"][-len(test_data):]
+
+        # Train the model
+        model = train_lstm_model(x_train, y_train)
+
+        # Generate predictions and future forecast
+        predicted_values_with_dates, actual_values, rmse, future_values_with_dates = evaluate_and_forecast(
+            model, x_test, y_test, scaler, test_dates, future_steps=10
+        )
+
+        # Prepare results to be saved
+        results = {
+            "predicted_values": [
+                {"date": date.strftime('%Y-%m-%d'), "value": value}
+                for date, value in predicted_values_with_dates
+            ],
+            "actual_values": actual_values,
+            "rmse": rmse,
+            "future_predictions": [
+                {"date": date.strftime('%Y-%m-%d'), "value": value}
+                for date, value in future_values_with_dates
+            ],
+        }
+
+        # Save results to MongoDB
+        stock_database["predictions"].insert_one(results)
+
+    except Exception as e:
+        print(f"Error during stock prediction: {e}")
+    finally:
+        lock = False
+
+
+@app.route("/start_stock_prediction", methods=["GET", "POST"])
+def start_stock_prediction():
+    global lock
+    if lock:
+        return jsonify({"status": "Prediction is already in progress"}), 429  # Too Many Requests
+    # Run prediction in a background thread
+    thread = Thread(target=perform_stock_prediction)
+    thread.start()
+    return jsonify({"status": "Stock prediction started"}), 202  # Accepted
+
+
+@app.route("/get_prediction_results", methods=["GET"])
+def get_prediction_results():
+    try:
+        # Fetch the most recent prediction from MongoDB
+        prediction_results = stock_database["predictions"].find_one({}, sort=[("_id", -1)])
+        if prediction_results:
+            # Use bson.json_util to serialize the result
+            return bson.json_util.dumps(prediction_results), 200
+        else:
+            return jsonify({"status": "No predictions available yet"}), 404
+    except Exception as e:
+        logger.error(f"Error fetching prediction results: {e}")
+        return jsonify({"error": "An error occurred while fetching predictions"}), 500
+
 
 # Anwendung starten
 if __name__ == "__main__":
