@@ -138,20 +138,21 @@ services:
       - flask-backend
       - react-frontend
 
-  # flask-tests:
-  #   build: ./muskmonitor-backend
-  #   command: pytest --maxfail=1 --disable-warnings
-  #   depends_on:
-  #     - stock-database
-  #     - vector-database
-  #   volumes:
-  #   - "./muskmonitor-backend/test_app.py:/app/test_app.py"
+  flask-tests:
+    build: ./muskmonitor-backend
+    command: pytest --maxfail=1 --disable-warnings
+    depends_on:
+      - stock-database
+      - vector-database
+      - flask-backend
+    # volumes:
+    # - "./muskmonitor-backend/test_app.py:/app/test_app.py"
 
-  # react-tests:
-  #   build:
-  #     context: ./muskmonitor-frontend
-  #     target: build
-  #   command: npm run test -- --run
+  react-tests:
+    build:
+      context: ./muskmonitor-frontend
+      target: build
+    command: npm run test -- --run
 
 volumes:
   Weaviate_Data:

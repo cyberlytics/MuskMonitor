@@ -13,7 +13,7 @@ def client():
 
 @pytest.fixture
 def mongodb_client():
-    yield MongoClient("mongodb://root:root_password@stock-database:27017/")
+    yield MongoClient("mongodb://stock-database:27017/")
 
 # Test, ob die Startseite der Anwendung korrekt funktioniert
 # -> Erwartet: HTTP-Statuscode 200 und "Hello, World!" im Inhalt
@@ -30,6 +30,133 @@ def test_404(client):
     """Test a non-existent route"""
     response = client.get("/non-existent-route")
     assert response.status_code == 404
+
+def test_get_stock_data(client):
+    response = client.get("/get_stock_data")
+    
+    assert response.status_code == 200
+    assert response.is_json
+    assert isinstance(response.json, list)
+    assert len(response.json) > 0
+
+    assert "Datum" in response.json[0].keys()
+    assert isinstance(response.json[0]["Datum"], str)
+    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d"), datetime)
+
+    assert "open" in response.json[0].keys()
+    assert isinstance(response.json[0]["open"], float)
+    assert response.json[0]["open"] >= 0.0
+
+    assert "high" in response.json[0].keys()
+    assert isinstance(response.json[0]["high"], float)
+    assert response.json[0]["high"] >= 0.0
+
+    assert "low" in response.json[0].keys()
+    assert isinstance(response.json[0]["low"], float)
+    assert response.json[0]["low"] >= 0.0
+
+    assert "close" in response.json[0].keys()
+    assert isinstance(response.json[0]["close"], float)
+    assert response.json[0]["close"] >= 0.0
+
+    assert "volume" in response.json[0].keys()
+    assert isinstance(response.json[0]["volume"], int)
+    assert response.json[0]["int"] >= 0
+    
+def test_get_important_tweets(client):
+    response = client.get("/get_important_tweets")
+    
+    assert response.status_code == 200
+    assert response.is_json
+    assert isinstance(response.json, list)
+    assert len(response.json) > 0
+
+    assert "Date" in response.json[0].keys()
+    assert isinstance(response.json[0]["Datum"], str)
+    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d %H:%M:%S"), datetime)
+
+    assert "Text" in response.json[0].keys()
+    assert isinstance(response.json[0]["Text"], str)
+    
+def test_analyze_sentiments(client):
+    response = client.get("/analyze_sentiments")
+    sentiments = ["Negative", "Neutral", "Positive"]
+    
+    assert response.status_code == 200
+    assert response.is_json()
+    
+    assert isinstance(response.json, list)
+    assert len(response.json) == 100
+    
+    assert "Datum" in response[0].keys()
+    assert isinstance(response[0]["Datum"], str)
+    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d %H:%M"), datetime)
+    
+    assert "Title" in response[0].keys()
+    assert isinstance(response[0]["Title"], str)
+    assert response[0]["Title"] == "Elon Musk schreibt auf X"
+    
+    assert "Class" in response[0].keys()
+    assert isinstance(response[0]["Class"], str)
+    assert response[0]["Class"] in sentiments
+    
+    assert "Text" in response[0].keys()
+    assert isinstance(response[0]["Text"], str)
+    
+    assert "_id" not in response[0].keys()
+     
+def test_start_scraper(client):
+    response = client.get("/start-scraper")
+    
+    assert response.status_code == 200
+    assert response.is_json()
+    assert "message" in response.json.keys()
+    assert "status" in response.json.keys()
+    assert "last_run" in response.json["status"].keys()
+    assert "new_tweets" in response.json["status"].keys()
+    assert response.json["message"] == "Scraper executed manually"
+    assert response.json["status"]["last_run"] == "Ran successfully"
+    assert isinstance(response.json["status"]["new_tweets"], int)
+    assert response.json["status"]["new_tweets"] >= 0
+     
+def test_scraper_status_endpoint(client):
+    response = client.get("/scraper-status")
+    
+    assert response.status_code == 200
+    assert response.is_json()
+    assert "status" in response.json.keys()
+    assert "last_run" in response.json["status"].keys()
+    assert "new_tweets" in response.json["status"].keys()
+    assert response.json["status"]["last_run"] == "Ran successfully"
+    assert isinstance(response.json["status"]["new_tweets"], int)
+    assert response.json["status"]["new_tweets"] >= 0
+    
+def test_stock_prediction(client, monkeypatch):
+    response = client.get("/scraper-status")
+    
+    
+    def mock_evaluate_and_plot(model, x_test, y_test, scaler):
+        predicted_values = [0, 1, 2, 3, 4]
+        actual_values = [1, 2, 3, 4, 5]
+        rmse = 0.1
+        return [predicted_values, actual_values, rmse]
+
+    monkeypatch.setattr(
+        "webserver.evaluate_and_plot", mock_evaluate_and_plot
+    )
+    
+    assert response.status_code == 200
+    assert response.is_json()
+    assert "predicted_values" in response.json.keys()
+    assert "actual_values" in response.json.keys()
+    assert "rmse" in response.json.keys()
+    
+    assert isinstance(response.json["predicted_values"], list)
+    assert isinstance(response.json["actual_values"], list)
+    assert isinstance(response.json["rmse"], float)
+    assert response.json["predicted_values"] == [0, 1, 2, 3, 4]
+    assert response.json["actual_values"] == [1, 2, 3, 4, 5]
+    assert response.json["rmse"] == 0.1
 
 def test_mongodb_insert_stock_data(client, mongodb_client):
     temp_db = mongodb_client["temporary_test_database"]
@@ -161,23 +288,23 @@ def test_mongodb_get_tweet_data(client, mongodb_client):
      
 # Test den Endpunkt /get_stock_data ob er die Stock-Daten korrekt zurückgibt
 # -> Erwartet: JSon-Daten mit dem Namen "Tesla" und dem Preis 650
-def test_get_stock_data(client, monkeypatch):
-    """Test the /get_stock_data route"""
+# def test_get_stock_data(client, monkeypatch):
+#     """Test the /get_stock_data route"""
 
-    class MockCollection:
-        def find(self, query):
-            return self
+#     class MockCollection:
+#         def find(self, query):
+#             return self
 
-        def sort(self, key):
-            return [{"name": "Tesla", "price": 650}]
+#         def sort(self, key):
+#             return [{"name": "Tesla", "price": 650}]
 
-    mock_collection = MockCollection()
-    monkeypatch.setattr("webserver.tesla_stock", mock_collection)
+#     mock_collection = MockCollection()
+#     monkeypatch.setattr("webserver.tesla_stock", mock_collection)
 
-    response = client.get("/get_stock_data")
-    assert response.status_code == 200
-    assert b'"name": "Tesla"' in response.data
-    assert b'"price": 650' in response.data
+#     response = client.get("/get_stock_data")
+#     assert response.status_code == 200
+#     assert b'"name": "Tesla"' in response.data
+#     assert b'"price": 650' in response.data
 
 
 # Test den Endpunkt /analyse_sentiments mit gültigen Eingaben

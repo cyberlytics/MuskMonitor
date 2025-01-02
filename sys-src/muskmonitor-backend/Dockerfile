@@ -4,6 +4,7 @@ WORKDIR /app
 COPY . .
 RUN apt-get update \
     && apt-get upgrade -y \
+    && apt-get install ca-certificates \
     && python3 -m pip install --no-cache-dir -r requirements.txt \
     && python3 -m pip install pytest
 EXPOSE 5000
