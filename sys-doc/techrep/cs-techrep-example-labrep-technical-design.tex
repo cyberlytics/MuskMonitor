@@ -10,8 +10,9 @@
 % ======================================================================
 % EDIT THESE:
 
-\cstechrepAuthorListTex{Andreas Fillenberg, Franziska Rubenbauer, Martin Zizler,\\ Christian Süß, Lukas Rupp, Christoph P.\ Neumann\,\orcidlink{0000-0002-5936-631X}}
-\cstechrepAuthorListBib{Andreas Fillenberg, Franziska Rubenbauer, Martin Zizler, Christian Süß,\\ Lukas Rupp, Christoph P.\ Neumann}
+\cstechrepAuthorListTex{Andreas Fillenberg, Franziska Rubenbauer, Martin Zizler, Christian Süß,\\ Lukas Rupp, Christoph P.\ Neumann\,\orcidlink{0000-0002-5936-631X}}
+% \cstechrepAuthorListBib{Andreas Fillenberg, Franziska Rubenbauer, Martin Zizler, Christian Süß,\\ Lukas Rupp, Christoph P.\ Neumann}
+\cstechrepAuthorListBib{Andreas Fillenberg and Franziska Rubenbauer and Martin Zizler and Christian Süß and Lukas Rupp and Christoph P.\ Neumann}
 
 % Capitalization: https://capitalizemytitle.com/style/Chicago/
 \cstechrepTitleTex{MuskMonitor: Eine MFRN-basierte Webanwendung zur Vorhersage der Tesla Stock Daten}
@@ -25,8 +26,8 @@
 %\cstechrepAddress{Amberg, Deutschland} % DE
 \cstechrepType{Technical Report}
 %\cstechrepType{Technischer Bericht} % DE
-\cstechrepYear{2024}
-\cstechrepMonth{12}
+\cstechrepYear{2025}
+\cstechrepMonth{1}
 \cstechrepNumber{CL-TR-\cstechrepYear{}-42}
 \cstechrepLang{ngerman}  % en-US
 %\cstechrepLang{ngerman} % DE
@@ -200,6 +201,12 @@ Um Tesla-Aktienkurse abzurufen, werden alle Daten aus der Datenbank als nach Dat
 Die Datenbank läuft in einem Docker-Container, der zustandslos ist. Das bedeutet, dass alle während der Laufzeit gespeicherten Daten beim Neustart des Containers verloren gehen würden. Dieses Problem wird durch ein Docker-Volume gelöst, das an den MongoDB-Container gemountet wird. Dadurch werden die Daten im Docker-Volume gespeichert, das unabhängig von der Laufzeit des Containers existiert und so die Persistenz der Datenbankinhalte sicherstellt.
 
 Die Skalierbarkeit der Persistenzschicht wird mittels Sharding sichergestellt. Hierfür werden die Daten auf mehrere voneinander unabhängige Shards aufgeteilt. Dadurch enthält jede Shard nur einen Anteil an der Gesamtdatenmenge, wodurch die einzelnen Shards auf vielen leistungsschwächeren Rechnern ausgeführt werden können. Dieser Ansatz der Skalierung ist effizienter als eine MongoDB-Instanz auf einem leistungsstärkeren Rechner auszuführen, weil die Lese- und Schreiboperationen der einzelnen Shards parallel ausgeführt werden können. Die Kommunikation mit den Shards erfolgt über einen zentralen Router, der die Clientanfragen an die Shards mit den Daten weiterleitet und die Ergebnisse an den Client zurückgibt. Die Konfiguration des Routers und der Shards erfolgt über einen Config Server. Die einzelnen Shards bestehen aus einer primären und zwei sekundären MongoDB-Instanzen. Nur die primäre Instanz erhält Schreibbefehle, welche anschließend von den sekundären Datenbanken nachgemacht werden. Dadurch sind die Daten aller drei Instanzen immer untereinander synchron. Fällt die primäre Instanz aus, so bestimmen die verbleibenden sekundären Instanzen eine neue primäre Datenbank. Sowohl primäre, als auch sekundäre Instanzen können Lesebefehle ausführen, was die Leistungsfähigkeit bei unserer sehr leselastigen Anwendung verbessert.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{DatabaseReplicaSets.png}
+    \caption{Architektur der Data Tier}
+\end{figure}
 
 \subsection{Deployment}
 Das Deployment des Systems basiert auf einer GitLab-gestützten CI/CD-Pipeline, die alle wesentlichen Schritte von Build und Tests bis hin zur Bereitstellung automatisiert. Dies gewährleistet eine hohe Effizienz, Konsistenz und Skalierbarkeit in der Entwicklungs- und Bereitstellungsphase.
