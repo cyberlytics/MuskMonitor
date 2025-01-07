@@ -64,7 +64,14 @@ json_file = "x_scraper/nitter_latest_tweets.json"
 
 
 # Run this task at midnight everyday.
-@scheduler.task("cron", id="scrape_tesla_stock_daily", hour=1, minute=0, misfire_grace_time=900, coalesce=True)
+@scheduler.task(
+    "cron",
+    id="scrape_tesla_stock_daily",
+    hour=1,
+    minute=0,
+    misfire_grace_time=900,
+    coalesce=True,
+)
 def scrape_tesla_stock_daily():
     # Prevent exceptions when scraping too much data in a single day from crashing the server.
     try:
@@ -125,7 +132,7 @@ def scrape_tweets_daily():
                 day = day[:-1]
                 date = f"{year}-{month}-{day}"
 
-                tweet_time = tweet_text[tweet_text.index(":") - 2:].strip()
+                tweet_time = tweet_text[tweet_text.index(":") - 2 :].strip()
                 timestamp = re.match(r"\d{1,2}:\d{2}\s(AM|PM)", tweet_time)[0]
                 # Convert 12-hour format with AM/PM to 24-hour format.
                 timestamp = datetime.datetime.strptime(timestamp, "%I:%M %p")
@@ -133,10 +140,9 @@ def scrape_tweets_daily():
                 datetimestamp = f"{date} {timestamp}"
 
                 if elon_musk_tweets.count_documents({"Date": date}) == 0:
-                    elon_musk_tweets.insert_one({
-                        "Date": datetimestamp,
-                        "Text": tweet["Text"]
-                    })
+                    elon_musk_tweets.insert_one(
+                        {"Date": datetimestamp, "Text": tweet["Text"]}
+                    )
 
             current_app.scraper_status["new_tweets"] = len(unique_tweets)
         else:
@@ -160,9 +166,11 @@ def get_stock_data():
         logger.error(f"Error retrieving stock data: {e}")
         return jsonify({"error": "Failed to fetch stock data"}), 500
 
+
 @app.route("/get_important_tweets", methods=["GET", "POST"])
 def get_important_tweets():
     return bson.json_util.dumps(important_tweets_collection.find({}).sort("Date"))
+
 
 @app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():
@@ -175,7 +183,7 @@ def analyse_sentiments():
         # tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
 
         # Führe die Sentiment-Analyse durch
-        #result = analyse_and_return_json(tweets)
+        # result = analyse_and_return_json(tweets)
         tweets_from_db = list(elon_musk_tweets.find({}).sort("Datum", ASCENDING))[-100:]
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
         sentiment_results = analyse_and_return_json(tweets_text)
@@ -184,10 +192,10 @@ def analyse_sentiments():
             tweet["Class"] = sentiment_result["sentiment"]
             tweet["Title"] = "Elon Musk schreibt auf X"
             del tweet["_id"]
-            
+
         return jsonify(tweets_from_db)
         # Sende das Ergebnis zurück als JSON-Antwort
-        #return jsonify(result)
+        # return jsonify(result)
     except Exception as e:
         logger.error(f"Fehler bei der Analyse: {str(e)}")
         return (
@@ -215,13 +223,15 @@ def scraper_status_endpoint():
     with app.app_context():
         """Check the status of the scraper."""
         return jsonify(current_app.scraper_status)
-    
+
+
 # Global variable to store results
 results_file = "prediction_results.json"
 lock = False  # Prevent multiple simultaneous predictions
 
 # Function to perform stock prediction
 import json  # Ensure you import the json module if you haven't
+
 
 # Function to perform stock prediction
 def perform_stock_prediction():
@@ -235,26 +245,28 @@ def perform_stock_prediction():
         x_test, y_test = create_lstm_data(test_data)
 
         # Extract test dates
-        test_dates = datafromdb["Datum"][-len(test_data):]
+        test_dates = datafromdb["Datum"][-len(test_data) :]
 
         # Train the model
         model = train_lstm_model(x_train, y_train)
 
         # Generate predictions and future forecast
-        predicted_values_with_dates, actual_values, rmse, future_values_with_dates = evaluate_and_forecast(
-            model, x_test, y_test, scaler, test_dates, future_steps=10
+        predicted_values_with_dates, actual_values, rmse, future_values_with_dates = (
+            evaluate_and_forecast(
+                model, x_test, y_test, scaler, test_dates, future_steps=10
+            )
         )
 
         # Prepare results to be saved
         results = {
             "predicted_values": [
-                {"date": date.strftime('%Y-%m-%d'), "value": value}
+                {"date": date.strftime("%Y-%m-%d"), "value": value}
                 for date, value in predicted_values_with_dates
             ],
             "actual_values": actual_values,
             "rmse": rmse,
             "future_predictions": [
-                {"date": date.strftime('%Y-%m-%d'), "value": value}
+                {"date": date.strftime("%Y-%m-%d"), "value": value}
                 for date, value in future_values_with_dates
             ],
         }
@@ -272,7 +284,10 @@ def perform_stock_prediction():
 def start_stock_prediction():
     global lock
     if lock:
-        return jsonify({"status": "Prediction is already in progress"}), 429  # Too Many Requests
+        return (
+            jsonify({"status": "Prediction is already in progress"}),
+            429,
+        )  # Too Many Requests
     # Run prediction in a background thread
     thread = Thread(target=perform_stock_prediction)
     thread.start()
@@ -283,7 +298,9 @@ def start_stock_prediction():
 def get_prediction_results():
     try:
         # Fetch the most recent prediction from MongoDB
-        prediction_results = stock_database["predictions"].find_one({}, sort=[("_id", -1)])
+        prediction_results = stock_database["predictions"].find_one(
+            {}, sort=[("_id", -1)]
+        )
         if prediction_results:
             # Use bson.json_util to serialize the result
             return bson.json_util.dumps(prediction_results), 200
