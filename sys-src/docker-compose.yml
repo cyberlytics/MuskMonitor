@@ -1,97 +1,101 @@
 services:
-  # stock-database:
-  #   image: mongo
-  #   restart: always
-  #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: root
-  #     MONGO_INITDB_ROOT_PASSWORD: root_password
-  #   volumes:
-  #   - "MongoDB_Data:/data/db"
-  # Router for replica set.
   stock-database:
     image: mongo
-    command: mongos --port 27017 --configdb rs-config-server/stock-db-config-server:27017 --bind_ip_all
+    command: mongod --port 27017 --bind_ip_all
     ports:
       - "27017:27017"
     restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root_password
     volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Router_DB:/data/db
-      - Mongo_DB_Router_Config:/data/configdb
+      - MongoDB_Data:/data/db
+  # Router for replica set.
+  # stock-database:
+  #   image: mongo
+  #   command: mongos --port 27017 --bind_ip_all
+  #   ports:
+  #     - "27017:27017"
+  #   restart: always
+  #   volumes:
+  #     - MongoDB_Data:/data/db
+      # - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+      # - Mongo_DB_Router_DB:/data/db
+      # - Mongo_DB_Router_Config:/data/configdb
 
-  stock-db-config-server:
-    image: mongo
-    command: mongod --port 27017 --configsvr --replSet rs-config-server
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Config_Server_DB:/data/db
-      - Mongo_DB_Config_Server_Config:/data/configdb
-    restart: always
-    links:
-      - stock-db-shard01-a
-      - stock-db-shard02-a
+  # stock-db-config-server:
+  #   image: mongo
+  #   command: mongod --port 27017 --configsvr --replSet rs-config-server
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Config_Server_DB:/data/db
+  #     - Mongo_DB_Config_Server_Config:/data/configdb
+  #   restart: always
+  #   links:
+  #     - stock-db-shard01-a
+  #     - stock-db-shard02-a
   
   # Replica set 1
-  stock-db-shard01-a:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-01
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_01_A_DB:/data/db
-      - Mongo_DB_Shard_01_A_Config:/data/configdb
-    restart: always
-    links:
-      - stock-db-shard01-b
-      - stock-db-shard01-c
+  # stock-db-shard01-a:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-01
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_01_A_DB:/data/db
+  #     - Mongo_DB_Shard_01_A_Config:/data/configdb
+  #   restart: always
+  #   links:
+  #     - stock-db-shard01-b
+  #     - stock-db-shard01-c
 
-  stock-db-shard01-b:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-01
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_01_B_DB:/data/db
-      - Mongo_DB_Shard_01_B_Config:/data/configdb
-    restart: always
+  # stock-db-shard01-b:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-01
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_01_B_DB:/data/db
+  #     - Mongo_DB_Shard_01_B_Config:/data/configdb
+  #   restart: always
 
-  stock-db-shard01-c:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-01
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_01_C_DB:/data/db
-      - Mongo_DB_Shard_01_C_Config:/data/configdb
-    restart: always
+  # stock-db-shard01-c:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-01
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_01_C_DB:/data/db
+  #     - Mongo_DB_Shard_01_C_Config:/data/configdb
+  #   restart: always
 
-  # Replica set 2
-  stock-db-shard02-a:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-02
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_02_A_DB:/data/db
-      - Mongo_DB_Shard_02_A_Config:/data/configdb
-    restart: always
-    links:
-      - stock-db-shard02-b
-      - stock-db-shard02-c
+  # # Replica set 2
+  # stock-db-shard02-a:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-02
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_02_A_DB:/data/db
+  #     - Mongo_DB_Shard_02_A_Config:/data/configdb
+  #   restart: always
+  #   links:
+  #     - stock-db-shard02-b
+  #     - stock-db-shard02-c
 
-  stock-db-shard02-b:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-02
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_02_B_DB:/data/db
-      - Mongo_DB_Shard_02_B_Config:/data/configdb
-    restart: always
+  # stock-db-shard02-b:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-02
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_02_B_DB:/data/db
+  #     - Mongo_DB_Shard_02_B_Config:/data/configdb
+  #   restart: always
 
-  stock-db-shard02-c:
-    image: mongo
-    command: mongod --port 27017 --shardsvr --replSet rs-shard-02
-    volumes:
-      - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
-      - Mongo_DB_Shard_02_C_DB:/data/db
-      - Mongo_DB_Shard_02_C_Config:/data/configdb
-    restart: always
+  # stock-db-shard02-c:
+  #   image: mongo
+  #   command: mongod --port 27017 --shardsvr --replSet rs-shard-02
+  #   volumes:
+  #     - ./muskmonitor-backend/mongodb_sharding_scripts:/scripts
+  #     - Mongo_DB_Shard_02_C_DB:/data/db
+  #     - Mongo_DB_Shard_02_C_Config:/data/configdb
+  #   restart: always
 
   vector-database:
     image: cr.weaviate.io/semitechnologies/weaviate
@@ -158,22 +162,22 @@ volumes:
   Weaviate_Data:
   MongoDB_Data:
   # Router.
-  Mongo_DB_Router_DB:
-  Mongo_DB_Router_Config:
-  # Config server.
-  Mongo_DB_Config_Server_DB:
-  Mongo_DB_Config_Server_Config:
-  # Replica set 1.
-  Mongo_DB_Shard_01_A_DB:
-  Mongo_DB_Shard_01_A_Config:
-  Mongo_DB_Shard_01_B_DB:
-  Mongo_DB_Shard_01_B_Config:
-  Mongo_DB_Shard_01_C_DB:
-  Mongo_DB_Shard_01_C_Config:
-  # Replica set 2.
-  Mongo_DB_Shard_02_A_DB:
-  Mongo_DB_Shard_02_A_Config:
-  Mongo_DB_Shard_02_B_DB:
-  Mongo_DB_Shard_02_B_Config:
-  Mongo_DB_Shard_02_C_DB:
-  Mongo_DB_Shard_02_C_Config:
+  # Mongo_DB_Router_DB:
+  # Mongo_DB_Router_Config:
+  # # Config server.
+  # Mongo_DB_Config_Server_DB:
+  # Mongo_DB_Config_Server_Config:
+  # # Replica set 1.
+  # Mongo_DB_Shard_01_A_DB:
+  # Mongo_DB_Shard_01_A_Config:
+  # Mongo_DB_Shard_01_B_DB:
+  # Mongo_DB_Shard_01_B_Config:
+  # Mongo_DB_Shard_01_C_DB:
+  # Mongo_DB_Shard_01_C_Config:
+  # # Replica set 2.
+  # Mongo_DB_Shard_02_A_DB:
+  # Mongo_DB_Shard_02_A_Config:
+  # Mongo_DB_Shard_02_B_DB:
+  # Mongo_DB_Shard_02_B_Config:
+  # Mongo_DB_Shard_02_C_DB:
+  # Mongo_DB_Shard_02_C_Config:

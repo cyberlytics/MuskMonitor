@@ -9,8 +9,8 @@ from pymongo import MongoClient
 #  Datenbankabfrage
 def fetch_data_from_db(start_date=None, end_date=None):
     try:
-        # mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
-        mongoClient = MongoClient("mongodb://stock-database:27017/")
+        mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
+        # mongoClient = MongoClient("mongodb://stock-database:27017/")
         stockDB = mongoClient["stock_data"]
         telsaCollection = stockDB["tesla"]
 
