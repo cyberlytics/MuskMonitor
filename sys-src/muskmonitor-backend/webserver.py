@@ -101,54 +101,75 @@ def scrape_tesla_stock_daily():
 def scrape_tweets_daily():
     with app.app_context():
         """Function to run the scraper periodically."""
-        new_tweets = fetch_tweets_from_nitter()
-        if not new_tweets:
-            print("No new tweets fetched.")
-            current_app.scraper_status["new_tweets"] = 0
-            return
 
-        existing_tweets = load_existing_tweets(json_file)
-        existing_ids = {tweet["Tweet_ID"] for tweet in existing_tweets}
+        try:
+            new_tweets = fetch_tweets_from_nitter()
+            if not new_tweets:
+                logger.info("No new tweets fetched.")
+                current_app.scraper_status["new_tweets"] = 0
+                return
 
-        unique_tweets = [
-            tweet for tweet in new_tweets if tweet["Tweet_ID"] not in existing_ids
-        ]
+            # Fetch existing tweets from MongoDB (no need for JSON file operations)
+            existing_tweets = list(elon_musk_tweets.find({}))
+            existing_dates = {tweet["Date"] for tweet in existing_tweets}  # Using Date for uniqueness
 
-        if unique_tweets:
-            print(f"Adding {len(unique_tweets)} new tweets.")
-            updated_tweets = unique_tweets + existing_tweets
-            # Reassign tweet counts for all tweets
-            for i, tweet in enumerate(updated_tweets, start=1):
-                tweet["Tweet_count"] = i
-            save_tweets(json_file, updated_tweets)
+            unique_tweets = [
+                tweet for tweet in new_tweets if tweet["Created_At"] not in existing_dates
+            ]
 
-            for tweet in updated_tweets:
-                tweet_text = tweet["Created_At"]
-                date = re.match(r"\w{3}\s\d{2},\s\d{4}", tweet_text)[0]
-                month, day, year = date.split(" ")
-                # Convert month abbreviations (Jan, Feb, ...) to number (1, 2, ...).
-                month = time.strptime(month, "%b").tm_mon
-                # Remove comma.
-                day = day[:-1]
-                date = f"{year}-{month}-{day}"
+            if unique_tweets:
+                logger.info(f"Adding {len(unique_tweets)} new tweets.")
 
-                tweet_time = tweet_text[tweet_text.index(":") - 2 :].strip()
-                timestamp = re.match(r"\d{1,2}:\d{2}\s(AM|PM)", tweet_time)[0]
-                # Convert 12-hour format with AM/PM to 24-hour format.
-                timestamp = datetime.datetime.strptime(timestamp, "%I:%M %p")
-                timestamp = datetime.datetime.strftime(timestamp, "%H:%M")
-                datetimestamp = f"{date} {timestamp}"
+                # Insert the new tweets into the database
+                for tweet in unique_tweets:
+                    try:
+                        tweet_text = tweet["Created_At"]
+                        
+                        # Extract date and time using regex, more robust pattern matching
+                        date_match = re.match(r"(\w{3})\s(\d{1,2}),\s(\d{4})\s·\s(\d{1,2}):(\d{2})\s(AM|PM)\sUTC", tweet_text)
+                        if not date_match:
+                            logger.error(f"Date format not found in tweet: {tweet_text}")
+                            continue
 
-                if elon_musk_tweets.count_documents({"Date": date}) == 0:
-                    elon_musk_tweets.insert_one(
-                        {"Date": datetimestamp, "Text": tweet["Text"]}
-                    )
+                        month, day, year, hour, minute, period = date_match.groups()
+                        month = time.strptime(month, "%b").tm_mon
+                        day = day.strip()  # Remove any leading or trailing spaces
+                        formatted_date = f"{year}-{month:02d}-{int(day):02d}"  # Zero-pads the day
 
-            current_app.scraper_status["new_tweets"] = len(unique_tweets)
-        else:
-            print("No new tweets to add.")
-            current_app.scraper_status["new_tweets"] = 0
-        current_app.scraper_status["last_run"] = "Ran successfully"
+                        # Convert 12-hour format to 24-hour format
+                        hour = int(hour)
+                        minute = int(minute)
+                        if period == "PM" and hour != 12:
+                            hour += 12
+                        if period == "AM" and hour == 12:
+                            hour = 0
+
+                        formatted_time = f"{hour:02d}:{minute:02d}"
+                        datetimestamp = f"{formatted_date} {formatted_time}"
+
+                        # Insert the tweet into the database
+                        result = elon_musk_tweets.update_one(
+                            {"Date": datetimestamp},
+                            {"$set": {"Text": tweet["Text"], "Date": datetimestamp}},
+                            upsert=True
+                        )
+
+                        if result.matched_count > 0:
+                            logger.info(f"Updated existing tweet with Date: {datetimestamp}")
+                        elif result.upserted_id:
+                            logger.info(f"Inserted new tweet with Date: {datetimestamp}")
+                    except Exception as e:
+                        logger.error(f"Error processing tweet: {e}")
+
+                current_app.scraper_status["new_tweets"] = len(unique_tweets)
+            else:
+                logger.info("No new tweets to add.")
+                current_app.scraper_status["new_tweets"] = 0
+
+            current_app.scraper_status["last_run"] = "Ran successfully"
+
+        except Exception as e:
+            logger.error(f"Error in scrape_tweets_daily task: {e}")
 
 
 @app.route("/")
@@ -193,7 +214,7 @@ def analyse_sentiments():
     """
     try:
         # Retrieve the latest 100 tweets from the database
-        tweets_from_db = list(elon_musk_tweets.find({}).sort("Datum", ASCENDING))[-100:]
+        tweets_from_db = list(elon_musk_tweets.find({}).sort("Date", DESCENDING))[-100:]
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
 
         # Perform sentiment analysis
@@ -211,7 +232,6 @@ def analyse_sentiments():
     except Exception as e:
         logger.error(f"Error during sentiment analysis: {str(e)}")
         return jsonify({"error": "Failed to analyze sentiments"}), 500
-
 
 
 @app.route("/start_scraper")
