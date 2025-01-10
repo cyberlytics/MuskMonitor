@@ -1,5 +1,5 @@
 stages:
-  #- setup_db
+  - setup_db
   - build
   - test
   - deploy
@@ -38,6 +38,7 @@ setup_db:
     - 'ssh -o StrictHostKeyChecking=no ubuntu@130.61.36.199 "cd /opt/muskmonitor/sys-src && sudo docker compose -f mongodb-sharding.yml down && sudo docker compose -f mongodb-sharding.yml up -d --build && echo "Sleep for 15 seconds" && sleep 15 && echo "15 seconds are up" && sudo docker compose exec stock-db-config-server sh -c \"mongosh < /scripts/init-configserver.js\" && sudo docker compose exec stock-db-shard01-a sh -c \"mongosh < /scripts/init-shard01.js\" && sudo docker compose exec stock-db-shard02-a sh -c \"mongosh < /scripts/init-shard02.js\" && sudo docker compose exec stock-database sh -c \"mongosh < /scripts/init-router.js\" && sudo docker compose exec stock-database sh -c \"mongosh < /scripts/init_databases_and_collections.js --port 27017\" && sudo docker compose -f mongodb-sharding.yml down"'
   only:
     - main
+  when: manual
 
 build:
   stage: build
