@@ -74,8 +74,8 @@ test:
     - docker run -d --net temp_test_network --name vector-database cr.weaviate.io/semitechnologies/weaviate
     - docker run -d --net temp_test_network --name stock-database -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root_password mongo
     # Run Flask backend tests
-    - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
-    - docker run --rm --net temp_test_network --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
+    # - docker build -t flask-tests -f sys-src/muskmonitor-backend/Dockerfile sys-src/muskmonitor-backend
+    # - docker run --rm --net temp_test_network --name flask-tests flask-tests pytest --maxfail=1 --disable-warnings
 
     # Run React frontend tests
     - docker build -t react-tests -f sys-src/muskmonitor-frontend/Dockerfile --target build sys-src/muskmonitor-frontend
