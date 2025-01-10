@@ -182,7 +182,7 @@ def home():
 def get_stock_data():
     try:
         stock_data = tesla_stock.find({}).sort("Datum")
-        response_data = bson.json_util.dumps(stock_data)
+        response_data = bson.json_util.dumps(stock_data, ensure_ascii=False)
         return Response(response_data, mimetype="application/json")
     except Exception as e:
         logger.error(f"Error retrieving stock data: {e}")
