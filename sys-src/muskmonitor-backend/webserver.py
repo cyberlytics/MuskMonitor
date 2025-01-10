@@ -101,21 +101,53 @@ def scrape_tesla_stock_daily():
 def scrape_tweets_daily():
     with app.app_context():
         """Function to run the scraper periodically."""
-
         try:
+            # Fetch tweets using your scraper function
             new_tweets = fetch_tweets_from_nitter()
             if not new_tweets:
                 logger.info("No new tweets fetched.")
                 current_app.scraper_status["new_tweets"] = 0
                 return
 
-            # Fetch existing tweets from MongoDB (no need for JSON file operations)
+            # Fetch existing tweets from MongoDB
             existing_tweets = list(elon_musk_tweets.find({}))
-            existing_dates = {tweet["Date"] for tweet in existing_tweets}  # Using Date for uniqueness
+            existing_dates = {tweet["Date"] for tweet in existing_tweets}  # Dates from DB
 
-            unique_tweets = [
-                tweet for tweet in new_tweets if tweet["Created_At"] not in existing_dates
-            ]
+            logger.debug(f"Existing dates in database: {existing_dates}")
+
+            # Filter for unique tweets
+            unique_tweets = []
+            for tweet in new_tweets:
+                tweet_text = tweet["Created_At"]
+
+                # Use regex to extract and format the date-time
+                date_match = re.match(r"(\w{3})\s(\d{1,2}),\s(\d{4})\s·\s(\d{1,2}):(\d{2})\s(AM|PM)\sUTC", tweet_text)
+                if not date_match:
+                    logger.error(f"Date format not found in tweet: {tweet_text}")
+                    continue
+
+                # Extract date and time components
+                month, day, year, hour, minute, period = date_match.groups()
+                month = time.strptime(month, "%b").tm_mon
+                day = day.strip()  # Remove any leading or trailing spaces
+                formatted_date = f"{year}-{month:02d}-{int(day):02d}"
+
+                # Convert 12-hour format to 24-hour format
+                hour = int(hour)
+                minute = int(minute)
+                if period == "PM" and hour != 12:
+                    hour += 12
+                if period == "AM" and hour == 12:
+                    hour = 0
+                formatted_time = f"{hour:02d}:{minute:02d}"
+                datetimestamp = f"{formatted_date} {formatted_time}"
+
+                logger.debug(f"Checking tweet with datetimestamp: {datetimestamp}")
+
+                # Check if the tweet is unique
+                if datetimestamp not in existing_dates:
+                    tweet["Date"] = datetimestamp  # Add formatted Date to the tweet
+                    unique_tweets.append(tweet)
 
             if unique_tweets:
                 logger.info(f"Adding {len(unique_tweets)} new tweets.")
@@ -123,31 +155,7 @@ def scrape_tweets_daily():
                 # Insert the new tweets into the database
                 for tweet in unique_tweets:
                     try:
-                        tweet_text = tweet["Created_At"]
-                        
-                        # Extract date and time using regex, more robust pattern matching
-                        date_match = re.match(r"(\w{3})\s(\d{1,2}),\s(\d{4})\s·\s(\d{1,2}):(\d{2})\s(AM|PM)\sUTC", tweet_text)
-                        if not date_match:
-                            logger.error(f"Date format not found in tweet: {tweet_text}")
-                            continue
-
-                        month, day, year, hour, minute, period = date_match.groups()
-                        month = time.strptime(month, "%b").tm_mon
-                        day = day.strip()  # Remove any leading or trailing spaces
-                        formatted_date = f"{year}-{month:02d}-{int(day):02d}"  # Zero-pads the day
-
-                        # Convert 12-hour format to 24-hour format
-                        hour = int(hour)
-                        minute = int(minute)
-                        if period == "PM" and hour != 12:
-                            hour += 12
-                        if period == "AM" and hour == 12:
-                            hour = 0
-
-                        formatted_time = f"{hour:02d}:{minute:02d}"
-                        datetimestamp = f"{formatted_date} {formatted_time}"
-
-                        # Insert the tweet into the database
+                        datetimestamp = tweet["Date"]
                         result = elon_musk_tweets.update_one(
                             {"Date": datetimestamp},
                             {"$set": {"Text": tweet["Text"], "Date": datetimestamp}},
@@ -166,10 +174,12 @@ def scrape_tweets_daily():
                 logger.info("No new tweets to add.")
                 current_app.scraper_status["new_tweets"] = 0
 
+            # Update scraper status
             current_app.scraper_status["last_run"] = "Ran successfully"
 
         except Exception as e:
             logger.error(f"Error in scrape_tweets_daily task: {e}")
+
 
 
 @app.route("/")

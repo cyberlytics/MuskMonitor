@@ -13,7 +13,7 @@ def client():
 
 @pytest.fixture
 def mongodb_client():
-    yield MongoClient("mongodb://stock-database:27017/")
+    yield MongoClient("mongodb://root:root_password@stock-database:27017/")
 
 # Test, ob die Startseite der Anwendung korrekt funktioniert
 # -> Erwartet: HTTP-Statuscode 200 und "Hello, World!" im Inhalt
