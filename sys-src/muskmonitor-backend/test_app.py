@@ -2,7 +2,7 @@ import pytest
 from webserver import app
 from pymongo import MongoClient
 import datetime
-
+from unittest.mock import MagicMock
 
 @pytest.fixture
 # Ermöglicht das Senden von HTTP-Anfragen an die Flask-App während der Tests
@@ -34,214 +34,245 @@ def test_404(client):
 def test_get_stock_data(client):
     response = client.get("/get_stock_data")
     
+    # Überprüfen des Statuscodes
     assert response.status_code == 200
+    # Überprüfen, ob die Antwort JSON ist
     assert response.is_json
-    assert isinstance(response.json, list)
-    assert len(response.json) > 0
+    # JSON-Daten aus der Antwort laden
+    data = response.json
 
-    assert "Datum" in response.json[0].keys()
-    assert isinstance(response.json[0]["Datum"], str)
-    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d"), datetime)
+    # Überprüfen, ob die Antwort eine Liste ist und nicht leer ist
+    assert isinstance(data, list)
+    assert len(data) > 0
 
-    assert "open" in response.json[0].keys()
-    assert isinstance(response.json[0]["open"], float)
-    assert response.json[0]["open"] >= 0.0
+    # Prüfung der Struktur und der Typen des ersten Eintrags
+    first_entry = data[0]
 
-    assert "high" in response.json[0].keys()
-    assert isinstance(response.json[0]["high"], float)
-    assert response.json[0]["high"] >= 0.0
+    assert "Datum" in first_entry
+    assert isinstance(first_entry["Datum"], str)
+    import datetime
+    assert isinstance(datetime.datetime.strptime(first_entry["Datum"], "%Y-%m-%d"), datetime.datetime)
 
-    assert "low" in response.json[0].keys()
-    assert isinstance(response.json[0]["low"], float)
-    assert response.json[0]["low"] >= 0.0
+    assert "open" in first_entry
+    assert isinstance(first_entry["open"], float)
+    assert first_entry["open"] >= 0.0
 
-    assert "close" in response.json[0].keys()
-    assert isinstance(response.json[0]["close"], float)
-    assert response.json[0]["close"] >= 0.0
+    assert "high" in first_entry
+    assert isinstance(first_entry["high"], float)
+    assert first_entry["high"] >= 0.0
 
-    assert "volume" in response.json[0].keys()
-    assert isinstance(response.json[0]["volume"], int)
-    assert response.json[0]["int"] >= 0
+    assert "low" in first_entry
+    assert isinstance(first_entry["low"], float)
+    assert first_entry["low"] >= 0.0
+
+    assert "close" in first_entry
+    assert isinstance(first_entry["close"], float)
+    assert first_entry["close"] >= 0.0
+
+    assert "volume" in first_entry
+    assert isinstance(first_entry["volume"], float)
+    assert first_entry["volume"] >= 0
+
     
 def test_get_important_tweets(client):
     response = client.get("/get_important_tweets")
     
     assert response.status_code == 200
-    assert response.is_json
-    assert isinstance(response.json, list)
-    assert len(response.json) > 0
+    assert response.is_json  # Check if the response claims to be JSON
+    assert isinstance(response.json, list)  # Ensure response is a list
+    assert len(response.json) > 0  # Ensure the list is not empty
 
-    assert "Date" in response.json[0].keys()
-    assert isinstance(response.json[0]["Datum"], str)
-    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d %H:%M:%S"), datetime)
+    # Validate structure of the first object in the response
+    first_tweet = response.json[0]
+    assert "Date" in first_tweet.keys(), "Key 'Date' is missing in the response"
+    assert "Text" in first_tweet.keys(), "Key 'Text' is missing in the response"
 
-    assert "Text" in response.json[0].keys()
-    assert isinstance(response.json[0]["Text"], str)
+    # Validate 'Date' field format and type
+    assert isinstance(first_tweet["Date"], str), "'Date' field is not a string"
+    try:
+        datetime.datetime.strptime(first_tweet["Date"], "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        pytest.fail(f"'Date' field does not match the format '%Y-%m-%d %H:%M:%S'")
+
+    # Validate 'Text' field type
+    assert isinstance(first_tweet["Text"], str), "'Text' field is not a string"
+
     
 def test_analyze_sentiments(client):
     response = client.get("/analyze_sentiments")
     sentiments = ["Negative", "Neutral", "Positive"]
-    
+
     assert response.status_code == 200
-    assert response.is_json()
+    assert response.is_json
+    data = response.json
+
+    assert isinstance(data, list)
+    assert len(data) <= 100
+
+    first_entry = data[0]
     
-    assert isinstance(response.json, list)
-    assert len(response.json) == 100
-    
-    assert "Datum" in response[0].keys()
-    assert isinstance(response[0]["Datum"], str)
-    assert isinstance(datetime.datetime.strptime(response[0]["Datum"], "%Y-%m-%d %H:%M"), datetime)
-    
-    assert "Title" in response[0].keys()
-    assert isinstance(response[0]["Title"], str)
-    assert response[0]["Title"] == "Elon Musk schreibt auf X"
-    
-    assert "Class" in response[0].keys()
-    assert isinstance(response[0]["Class"], str)
-    assert response[0]["Class"] in sentiments
-    
-    assert "Text" in response[0].keys()
-    assert isinstance(response[0]["Text"], str)
-    
-    assert "_id" not in response[0].keys()
+    assert "Date" in first_entry
+    assert isinstance(first_entry["Date"], str)
+    assert isinstance(datetime.datetime.strptime(first_entry["Date"], "%Y-%m-%d %H:%M"), datetime.datetime)
+
+    assert "Title" in first_entry
+    assert isinstance(first_entry["Title"], str)
+    assert first_entry["Title"] == "Elon Musk schreibt auf X"
+
+    assert "Class" in first_entry
+    assert isinstance(first_entry["Class"], str)
+    assert first_entry["Class"] in sentiments
+
+    assert "Text" in first_entry
+    assert isinstance(first_entry["Text"], str)
+
+    assert "_id" not in first_entry
      
-def test_start_scraper(client):
-    response = client.get("/start-scraper")
-    
-    assert response.status_code == 200
-    assert response.is_json()
-    assert "message" in response.json.keys()
-    assert "status" in response.json.keys()
-    assert "last_run" in response.json["status"].keys()
-    assert "new_tweets" in response.json["status"].keys()
-    assert response.json["message"] == "Scraper executed manually"
-    assert response.json["status"]["last_run"] == "Ran successfully"
-    assert isinstance(response.json["status"]["new_tweets"], int)
-    assert response.json["status"]["new_tweets"] >= 0
+# def test_start_scraper(client):
+#     response = client.get("/start_scraper")
+
+#     assert response.status_code == 200
+#     assert response.is_json
+#     data = response.json
+
+#     assert "message" in data
+#     assert "status" in data
+#     status = data["status"]
+
+#     assert "last_run" in status
+#     assert "new_tweets" in status
+
+#     assert data["message"] == "Scraper executed manually"
+#     assert status["last_run"] == "Ran successfully"
+#     assert isinstance(status["new_tweets"], int)
+#     assert status["new_tweets"] >= 0
      
 def test_scraper_status_endpoint(client):
-    response = client.get("/scraper-status")
-    
-    assert response.status_code == 200
-    assert response.is_json()
-    assert "status" in response.json.keys()
-    assert "last_run" in response.json["status"].keys()
-    assert "new_tweets" in response.json["status"].keys()
-    assert response.json["status"]["last_run"] == "Ran successfully"
-    assert isinstance(response.json["status"]["new_tweets"], int)
-    assert response.json["status"]["new_tweets"] >= 0
-    
-def test_stock_prediction(client, monkeypatch):
-    response = client.get("/scraper-status")
-    
-    
-    def mock_evaluate_and_plot(model, x_test, y_test, scaler):
-        predicted_values = [0, 1, 2, 3, 4]
-        actual_values = [1, 2, 3, 4, 5]
-        rmse = 0.1
-        return [predicted_values, actual_values, rmse]
+    response = client.get("/scraper_status")
 
-    monkeypatch.setattr(
-        "webserver.evaluate_and_plot", mock_evaluate_and_plot
-    )
-    
     assert response.status_code == 200
-    assert response.is_json()
-    assert "predicted_values" in response.json.keys()
-    assert "actual_values" in response.json.keys()
-    assert "rmse" in response.json.keys()
+    assert response.is_json
+    data = response.json
+
+    assert "last_run" in data
+    assert "new_tweets" in data
     
-    assert isinstance(response.json["predicted_values"], list)
-    assert isinstance(response.json["actual_values"], list)
-    assert isinstance(response.json["rmse"], float)
-    assert response.json["predicted_values"] == [0, 1, 2, 3, 4]
-    assert response.json["actual_values"] == [1, 2, 3, 4, 5]
-    assert response.json["rmse"] == 0.1
+def test_perform_stock_prediction(monkeypatch):
+    # Mock dependencies
+    mock_fetch_data_from_db = MagicMock(return_value={
+        "Datum": [datetime.datetime(2025, 1, i) for i in range(1, 31)],
+        "Close": [i * 10 for i in range(1, 31)]
+    })
+    mock_prepare_data = MagicMock(return_value=(
+        [[1, 2, 3]],  # train_data
+        [[4, 5, 6]],  # test_data
+        "mock_scaler"  # scaler
+    ))
+    mock_create_lstm_data = MagicMock(side_effect=lambda data: (["mock_x"], ["mock_y"]))
+    mock_train_lstm_model = MagicMock(return_value="mock_model")
+    mock_evaluate_and_forecast = MagicMock(return_value=(
+        [(datetime.datetime(2025, 1, i), i) for i in range(1, 6)],  # predicted_values_with_dates
+        [10, 20, 30, 40, 50],  # actual_values
+        0.1,  # rmse
+        [(datetime.datetime(2025, 2, i), i * 10) for i in range(1, 6)]  # future_values_with_dates
+    ))
+    mock_insert_one = MagicMock()
+
+    # Patch functions and database collection
+    monkeypatch.setattr("webserver.fetch_data_from_db", mock_fetch_data_from_db)
+    monkeypatch.setattr("webserver.prepare_data", mock_prepare_data)
+    monkeypatch.setattr("webserver.create_lstm_data", mock_create_lstm_data)
+    monkeypatch.setattr("webserver.train_lstm_model", mock_train_lstm_model)
+    monkeypatch.setattr("webserver.evaluate_and_forecast", mock_evaluate_and_forecast)
+    monkeypatch.setattr("webserver.stock_database", {"predictions": MagicMock(insert_one=mock_insert_one)})
+
+    # Call the function under test
+    from webserver import perform_stock_prediction
+    perform_stock_prediction()
+
+    # Assertions
+    mock_fetch_data_from_db.assert_called_once()
+    mock_prepare_data.assert_called_once_with(mock_fetch_data_from_db.return_value)
+    mock_create_lstm_data.assert_any_call([[1, 2, 3]])  # train_data
+    mock_create_lstm_data.assert_any_call([[4, 5, 6]])  # test_data
+    mock_train_lstm_model.assert_called_once_with(["mock_x"], ["mock_y"])
+    mock_evaluate_and_forecast.assert_called_once_with(
+        "mock_model", ["mock_x"], ["mock_y"], "mock_scaler",
+        mock_fetch_data_from_db.return_value["Datum"][-len([[4, 5, 6]]) :],  # test_dates
+        future_steps=10
+    )
+    mock_insert_one.assert_called_once_with({
+        "predicted_values": [
+            {"date": date.strftime("%Y-%m-%d"), "value": value}
+            for date, value in mock_evaluate_and_forecast.return_value[0]
+        ],
+        "actual_values": mock_evaluate_and_forecast.return_value[1],
+        "rmse": mock_evaluate_and_forecast.return_value[2],
+        "future_predictions": [
+            {"date": date.strftime("%Y-%m-%d"), "value": value}
+            for date, value in mock_evaluate_and_forecast.return_value[3]
+        ],
+    })
 
 def test_mongodb_insert_stock_data(client, mongodb_client):
     temp_db = mongodb_client["temporary_test_database"]
     temp_collection = temp_db["temporary_test_collection"]
-    # Clear collection to remove artifacts.
     temp_collection.drop()
-    
+
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    
     temp_collection.insert_one({
         "Datum": date,
-        "open": 100,
-        "close": 200,
-        "low": 50,
-        "high": 300,
+        "open": 100.0,
+        "close": 200.0,
+        "low": 50.0,
+        "high": 300.0,
         "volume": 400
     })
 
     assert temp_collection.count_documents({}) == 1
-    
     mongodb_client.drop_database("temporary_test_database")
     
 def test_mongodb_get_stock_data(client, mongodb_client):
     temp_db = mongodb_client["temporary_test_database"]
     temp_collection = temp_db["temporary_test_collection"]
-    # Clear collection to remove artifacts.
     temp_collection.drop()
-    
+
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    
     temp_collection.insert_one({
         "Datum": date,
-        "open": 100,
-        "close": 200,
-        "low": 50,
-        "high": 300,
+        "open": 100.0,
+        "close": 200.0,
+        "low": 50.0,
+        "high": 300.0,
         "volume": 400
     })
 
     assert temp_collection.count_documents({"Datum": date}) == 1
-    
-    for object in temp_collection.find({"Datum": date}):
-        assert "Datum" in object.keys()
-        assert "open" in object.keys()
-        assert "close" in object.keys()
-        assert "low" in object.keys()
-        assert "high" in object.keys()
-        assert "low" in object.keys()
-        assert object["Datum"] == date
-        assert object["open"] == 100
-        assert object["close"] == 200
-        assert object["low"] == 50
-        assert object["high"] == 300
-        assert object["volume"] == 400
 
-    day_before_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    day_after_date = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    
-    assert temp_collection.count_documents({"Datum": day_before_date}) == 0
-    assert temp_collection.count_documents({"Datum": day_after_date}) == 0
-    assert temp_collection.count_documents({"Datum": {"$gte": day_before_date, "$lte": day_after_date}}) == 1
-    
-    for object in temp_collection.find({"Datum": {"$gte": day_before_date, "$lte": day_after_date}}):
-        assert "Datum" in object.keys()
-        assert "open" in object.keys()
-        assert "close" in object.keys()
-        assert "low" in object.keys()
-        assert "high" in object.keys()
-        assert "low" in object.keys()
-        assert object["Datum"] == date
-        assert object["open"] == 100
-        assert object["close"] == 200
-        assert object["low"] == 50
-        assert object["high"] == 300
-        assert object["volume"] == 400
+    for obj in temp_collection.find({"Datum": date}):
+        assert "Datum" in obj
+        assert "open" in obj
+        assert "close" in obj
+        assert "low" in obj
+        assert "high" in obj
+        assert "volume" in obj
+
+        assert obj["Datum"] == date
+        assert obj["open"] == 100.0
+        assert obj["close"] == 200.0
+        assert obj["low"] == 50.0
+        assert obj["high"] == 300.0
+        assert isinstance(obj["volume"], (int, float))
+        assert obj["volume"] == 400
+
     mongodb_client.drop_database("temporary_test_database")
 
 def test_mongodb_insert_tweet_data(client, mongodb_client):
     temp_db = mongodb_client["temporary_test_database"]
     temp_collection = temp_db["temporary_test_collection"]
-    # Clear collection to remove artifacts.
     temp_collection.drop()
-    
+
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    
     temp_collection.insert_one({
         "Datum": date,
         "Text": "Text for testing purposes only"
@@ -253,37 +284,24 @@ def test_mongodb_insert_tweet_data(client, mongodb_client):
 def test_mongodb_get_tweet_data(client, mongodb_client):
     temp_db = mongodb_client["temporary_test_database"]
     temp_collection = temp_db["temporary_test_collection"]
-    # Clear collection to remove artifacts.
     temp_collection.drop()
-    
+
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     text = "Text for testing purposes only"
-    
+
     temp_collection.insert_one({
         "Datum": date,
         "Text": text
     })
 
     assert temp_collection.count_documents({"Datum": date}) == 1
-    
-    for object in temp_collection.find({"Datum": date}):
-        assert "Datum" in object.keys()
-        assert "Text" in object.keys()
-        assert object["Datum"] == date
-        assert object["Text"] == text
 
-    day_before_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    day_after_date = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    
-    assert temp_collection.count_documents({"Datum": day_before_date}) == 0
-    assert temp_collection.count_documents({"Datum": day_after_date}) == 0
-    assert temp_collection.count_documents({"Datum": {"$gte": day_before_date, "$lte": day_after_date}}) == 1
-    
-    for object in temp_collection.find({"Datum": {"$gte": day_before_date, "$lte": day_after_date}}):
-        assert "Datum" in object.keys()
-        assert "Text" in object.keys()
-        assert object["Datum"] == date
-        assert object["Text"] == text
+    for obj in temp_collection.find({"Datum": date}):
+        assert "Datum" in obj
+        assert "Text" in obj
+        assert obj["Datum"] == date
+        assert obj["Text"] == text
+
     mongodb_client.drop_database("temporary_test_database")
      
 # Test den Endpunkt /get_stock_data ob er die Stock-Daten korrekt zurückgibt

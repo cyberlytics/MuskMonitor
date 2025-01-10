@@ -140,7 +140,7 @@ services:
 
   flask-tests:
     build: ./muskmonitor-backend
-    command: pytest --maxfail=1 --disable-warnings
+    command: pytest --maxfail=1 --disable-warnings --cov=webserver --cov=x_scraper --cov=tesla_stock --cov=sentiment_analyse
     depends_on:
       - stock-database
       - vector-database
