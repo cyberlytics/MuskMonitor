@@ -1,5 +1,5 @@
 stages:
-  - setup_db
+  #- setup_db
   - build
   - test
   - deploy

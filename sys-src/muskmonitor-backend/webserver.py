@@ -253,7 +253,8 @@ def scraper_status_endpoint():
 
 # Global variable to store results
 results_file = "prediction_results.json"
-lock = False  # Prevent multiple simultaneous predictions
+with app.app_context():
+    current_app.lock = False #prevent more concurrent predictions
 
 # Function to perform stock prediction
 import json  # Ensure you import the json module if you haven't
@@ -261,8 +262,11 @@ import json  # Ensure you import the json module if you haven't
 
 # Function to perform stock prediction
 def perform_stock_prediction():
-    global lock
-    lock = True
+    with app.app_context():
+        if current_app.lock:
+            logger.info("Prediction is already in progress")
+            return
+        current_app.lock = True  # Acquire the lock
     try:
         # Fetch data from the database
         datafromdb = fetch_data_from_db()
@@ -271,7 +275,7 @@ def perform_stock_prediction():
         x_test, y_test = create_lstm_data(test_data)
 
         # Extract test dates
-        test_dates = datafromdb["Datum"][-len(test_data) :]
+        test_dates = datafromdb["Datum"][-len(test_data):]
 
         # Train the model
         model = train_lstm_model(x_train, y_train)
@@ -299,32 +303,30 @@ def perform_stock_prediction():
 
         # Save results to MongoDB
         stock_database["predictions"].insert_one(results)
-
     except Exception as e:
-        print(f"Error during stock prediction: {e}")
+        logger.error(f"Error during stock prediction: {e}")
     finally:
-        lock = False
+        with app.app_context():
+            current_app.lock = False  # Release the lock
+
 
 
 @app.route("/start_stock_prediction", methods=["GET", "POST"])
 def start_stock_prediction():
-    """
-    Endpoint to trigger stock price prediction.
-    """
-    global lock
-    if lock:
-        return jsonify({"status": "Prediction is already in progress"}), 429  # Too Many Requests
-    try:
-        # Run the prediction in a background thread
-        thread = Thread(target=perform_stock_prediction)
-        thread.start()
-        response_data = {"status": "Stock prediction started"}
-        return Response(
-            bson.json_util.dumps(response_data), mimetype="application/json"
-        ), 202  # Accepted
-    except Exception as e:
-        logger.error(f"Error starting stock prediction: {str(e)}")
-        return jsonify({"error": "Failed to start stock prediction"}), 500
+    with app.app_context():
+        if current_app.lock:
+            return jsonify({"status": "Prediction is already in progress"}), 429  # Too Many Requests
+        try:
+            # Run the prediction in a background thread
+            thread = Thread(target=perform_stock_prediction)
+            thread.start()
+            response_data = {"status": "Stock prediction started"}
+            return Response(
+                bson.json_util.dumps(response_data), mimetype="application/json"
+            ), 202  # Accepted
+        except Exception as e:
+            logger.error(f"Error starting stock prediction: {str(e)}")
+            return jsonify({"error": "Failed to start stock prediction"}), 500
 
 
 @app.route("/get_prediction_results", methods=["GET"])
