@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, current_app
+from flask import Flask, request, jsonify, current_app, Response
 from flask_pymongo import PyMongo
 from pymongo import MongoClient, DESCENDING, ASCENDING
 import bson.json_util
@@ -161,7 +161,8 @@ def home():
 def get_stock_data():
     try:
         stock_data = tesla_stock.find({}).sort("Datum")
-        return bson.json_util.dumps(stock_data)
+        response_data = bson.json_util.dumps(stock_data)
+        return Response(response_data, mimetype="application/json")
     except Exception as e:
         logger.error(f"Error retrieving stock data: {e}")
         return jsonify({"error": "Failed to fetch stock data"}), 500
@@ -169,60 +170,85 @@ def get_stock_data():
 
 @app.route("/get_important_tweets", methods=["GET", "POST"])
 def get_important_tweets():
-    return bson.json_util.dumps(important_tweets_collection.find({}).sort("Date"))
+    try:
+        # Fetch important tweets from the database
+        important_tweets = important_tweets_collection.find({}).sort("Date")
+        
+        # Serialize the data using bson.json_util to handle MongoDB BSON objects
+        response_data = bson.json_util.dumps(important_tweets)
+        
+        # Return the response with correct mimetype
+        return Response(response_data, mimetype="application/json")
+    except Exception as e:
+        logger.error(f"Error retrieving important tweets: {e}")
+        return jsonify({"error": "Failed to fetch important tweets"}), 500
+
 
 
 @app.route("/analyze_sentiments", methods=["GET", "POST"])
 def analyse_sentiments():
     """
-    Endpoint zum Durchführen der Sentiment-Analyse.
-    Erwartet ein JSON mit einer Liste von Texten.
+    Endpoint for performing sentiment analysis.
+    Fetches recent tweets from the database and analyzes their sentiment.
     """
     try:
-        # data = request.get_json()  # Empfang der JSON-Daten im POST-Request
-        # tweets = data["tweets"]  # Extrahiere die Tweets aus dem Request
-
-        # Führe die Sentiment-Analyse durch
-        # result = analyse_and_return_json(tweets)
+        # Retrieve the latest 100 tweets from the database
         tweets_from_db = list(elon_musk_tweets.find({}).sort("Datum", ASCENDING))[-100:]
         tweets_text = [tweet["Text"] for tweet in tweets_from_db]
+
+        # Perform sentiment analysis
         sentiment_results = analyse_and_return_json(tweets_text)
 
+        # Update each tweet with its sentiment class
         for sentiment_result, tweet in zip(sentiment_results, tweets_from_db):
             tweet["Class"] = sentiment_result["sentiment"]
             tweet["Title"] = "Elon Musk schreibt auf X"
             del tweet["_id"]
 
-        return jsonify(tweets_from_db)
-        # Sende das Ergebnis zurück als JSON-Antwort
-        # return jsonify(result)
+        # Serialize the results and return them
+        response_data = bson.json_util.dumps(tweets_from_db)
+        return Response(response_data, mimetype="application/json")
     except Exception as e:
-        logger.error(f"Fehler bei der Analyse: {str(e)}")
-        return (
-            jsonify({"error": "Invalid request, please provide a list of tweets."}),
-            400,
-        )
+        logger.error(f"Error during sentiment analysis: {str(e)}")
+        return jsonify({"error": "Failed to analyze sentiments"}), 500
+
 
 
 @app.route("/start_scraper")
 def start_scraper():
-    with app.app_context():
-        """Manually trigger the scraper."""
-        scrape_tweets_daily()
-        return jsonify(
-            {
+    """
+    Endpoint to manually trigger the scraper for fetching tweets.
+    """
+    try:
+        with app.app_context():
+            scrape_tweets_daily()
+            response_data = {
                 "message": "Scraper executed manually.",
                 "status": current_app.scraper_status,
             }
-        )
+            return Response(
+                bson.json_util.dumps(response_data), mimetype="application/json"
+            )
+    except Exception as e:
+        logger.error(f"Error while manually starting scraper: {str(e)}")
+        return jsonify({"error": "Failed to start scraper"}), 500
 
 
-# Status des Scrapers abrufen
+
 @app.route("/scraper_status")
 def scraper_status_endpoint():
-    with app.app_context():
-        """Check the status of the scraper."""
-        return jsonify(current_app.scraper_status)
+    """
+    Endpoint to fetch the current status of the scraper.
+    """
+    try:
+        with app.app_context():
+            response_data = current_app.scraper_status
+            return Response(
+                bson.json_util.dumps(response_data), mimetype="application/json"
+            )
+    except Exception as e:
+        logger.error(f"Error fetching scraper status: {str(e)}")
+        return jsonify({"error": "Failed to fetch scraper status"}), 500
 
 
 # Global variable to store results
@@ -282,34 +308,44 @@ def perform_stock_prediction():
 
 @app.route("/start_stock_prediction", methods=["GET", "POST"])
 def start_stock_prediction():
+    """
+    Endpoint to trigger stock price prediction.
+    """
     global lock
     if lock:
-        return (
-            jsonify({"status": "Prediction is already in progress"}),
-            429,
-        )  # Too Many Requests
-    # Run prediction in a background thread
-    thread = Thread(target=perform_stock_prediction)
-    thread.start()
-    return jsonify({"status": "Stock prediction started"}), 202  # Accepted
+        return jsonify({"status": "Prediction is already in progress"}), 429  # Too Many Requests
+    try:
+        # Run the prediction in a background thread
+        thread = Thread(target=perform_stock_prediction)
+        thread.start()
+        response_data = {"status": "Stock prediction started"}
+        return Response(
+            bson.json_util.dumps(response_data), mimetype="application/json"
+        ), 202  # Accepted
+    except Exception as e:
+        logger.error(f"Error starting stock prediction: {str(e)}")
+        return jsonify({"error": "Failed to start stock prediction"}), 500
 
 
 @app.route("/get_prediction_results", methods=["GET"])
 def get_prediction_results():
+    """
+    Endpoint to fetch the latest stock prediction results.
+    """
     try:
-        # Fetch the most recent prediction from MongoDB
+        # Fetch the most recent prediction from the database
         prediction_results = stock_database["predictions"].find_one(
             {}, sort=[("_id", -1)]
         )
         if prediction_results:
-            # Use bson.json_util to serialize the result
-            return bson.json_util.dumps(prediction_results), 200
+            # Serialize the result and return it
+            response_data = bson.json_util.dumps(prediction_results)
+            return Response(response_data, mimetype="application/json")
         else:
             return jsonify({"status": "No predictions available yet"}), 404
     except Exception as e:
-        logger.error(f"Error fetching prediction results: {e}")
+        logger.error(f"Error fetching prediction results: {str(e)}")
         return jsonify({"error": "An error occurred while fetching predictions"}), 500
-
 
 # Anwendung starten
 if __name__ == "__main__":
