@@ -3,8 +3,15 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.preprocessing import MinMaxScaler
-from tesla_stock.stock_prediction import LSTMModel
-
+from tesla_stock.stock_prediction import (
+    fetch_data_from_db,
+    prepare_data,
+    create_lstm_data,
+    evaluate_and_forecast,
+    LSTMModel,
+)
+from unittest.mock import MagicMock
+from pymongo import MongoClient
 
 @pytest.fixture
 def sample_data():
@@ -129,3 +136,44 @@ def test_model_prediction(sample_data, model):
 
     rmse = np.sqrt(np.mean((y_test - predictions) ** 2))
     assert rmse < 1.0
+
+@pytest.fixture
+def mock_mongo_data():
+    return [
+        {"Datum": "2023-01-01", "close": 100, "open": 95, "high": 105, "low": 90, "volume": 1000},
+        {"Datum": "2023-01-02", "close": 102, "open": 100, "high": 106, "low": 98, "volume": 1100},
+        {"Datum": "2023-01-03", "close": 101, "open": 98, "high": 104, "low": 97, "volume": 900},
+    ]
+
+
+def test_prepare_data(sample_data):
+    train_data, test_data, scaler = prepare_data(sample_data)
+    assert train_data.shape[0] < len(sample_data)
+    assert len(test_data) > 0
+    assert scaler is not None
+
+
+def test_create_lstm_data():
+    data = np.random.rand(100, 1)
+    x_data, y_data = create_lstm_data(data, time_step=10)
+
+    assert x_data.shape[0] == len(data) - 10
+    assert y_data.shape[0] == len(data) - 10
+    assert x_data.shape[1] == 10  # Time step
+
+
+def test_evaluate_and_forecast(sample_data, model):
+    train_data, test_data, scaler = prepare_data(sample_data)
+    x_test, y_test = create_lstm_data(test_data)
+
+    # Convert test_dates to a Series to be compatible with .iloc
+    test_dates = pd.Series(pd.date_range("2023-01-01", periods=len(y_test)))
+
+    model.eval()
+    predicted, y_actual, rmse, future_forecast = evaluate_and_forecast(
+        model, x_test, y_test, scaler, test_dates, future_steps=5
+    )
+
+    assert len(predicted) == len(y_actual)
+    assert rmse > 0
+    assert len(future_forecast) == 5
