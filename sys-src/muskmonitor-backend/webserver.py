@@ -96,8 +96,8 @@ def scrape_tesla_stock_daily():
         logger.info(f"Exception getting stock data from alpha vantage: {e}")
 
 
-# Run this task every 30 minutes.
-@scheduler.task("interval", id="scrape_tweets_daily", minutes=30)
+# Run this task every 6 hours.
+@scheduler.task("interval", id="scrape_tweets_daily", hours=6)
 def scrape_tweets_daily():
     with app.app_context():
         """Function to run the scraper periodically."""
