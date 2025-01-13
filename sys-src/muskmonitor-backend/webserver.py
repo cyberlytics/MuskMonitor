@@ -38,8 +38,8 @@ logger.addHandler(ch)
 app = Flask(__name__)  # Flask-Anwendungsobjekt erstellen und benennen
 CORS(app)
 app.config.from_object(FlaskAPSchedulerConfig)
-mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
-# mongo = MongoClient("mongodb://stock-database:27017/")
+# mongo = MongoClient("mongodb://root:root_password@stock-database:27017/")
+mongo = MongoClient("mongodb://stock-database:27017/")
 stock_database = mongo["stock_data"]
 tesla_stock = stock_database["tesla"]
 

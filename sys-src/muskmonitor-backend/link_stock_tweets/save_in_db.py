@@ -2,8 +2,8 @@ from pymongo import MongoClient
 import json
 import datetime
 
-mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
-# mongoClient = MongoClient("mongodb://stock-database:27017/")
+# mongoClient = MongoClient("mongodb://root:root_password@stock-database:27017/")
+mongoClient = MongoClient("mongodb://stock-database:27017/")
 tweets_db = mongoClient["tweet_data"]
 important_tweets_collection = tweets_db["elon_musk_important_tweets"]
 
